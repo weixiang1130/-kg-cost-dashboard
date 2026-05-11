@@ -84,8 +84,8 @@ def render_conditions_section(unique_dns, conds_dict, key_prefix):
             tab_list = st.tabs(unique_dns)
 
         for idx, dn in enumerate(unique_dns):
-            container = tab_list[idx] if len(unique_dns) > 1 else st
-            with container if container else st.container():
+            container = tab_list[idx] if len(unique_dns) > 1 else st.container()
+            with container:
                 cond = conds_dict.get(dn, default_conditions())
                 if not cond.get('fab_code'): cond['fab_code'] = detect_fab_code(dn)
                 if not cond.get('region'): cond['region'] = detect_region(dn)

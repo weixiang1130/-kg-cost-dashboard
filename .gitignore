@@ -1,9 +1,16 @@
 __pycache__/
 *.pyc
+
+# === 公司機密資料 ===
 *.db
 *.xlsx
 *.xls
+*.csv
+kg_areas.json
 kg_data/
+files/
+
+# === 環境設定 ===
 .streamlit/
 .claude/
 *.zip

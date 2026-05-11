@@ -22,6 +22,9 @@ PING_PER_M2 = 0.3025
 ORDER = ['租工','打石工','技術工','零星建材','雜項工程','機具租金',
          '安衛零星','雜支一','雜支二','水費','電費','電話費','人員薪資']
 PROJECT_TYPES = ['FAB', 'CUP', 'OFFICE', '物流中心', '其他']
+REGIONS = ['竹科', '中科', '南科', '其他']
+STRUCT_TYPES = ['RC', 'SC', 'SRC', '其他']
+CONTRACT_MODES = ['', '點工', '包工', '連工帶料']
 
 def detect_project_type(name):
     s = str(name).upper()
@@ -30,6 +33,104 @@ def detect_project_type(name):
     if 'OFFICE' in s: return 'OFFICE'
     if '物流' in str(name): return '物流中心'
     return '其他'
+
+def detect_fab_code(name):
+    """從專案名偵測廠區代號，如 AP7P1、F22P5、AP6B 等"""
+    import re
+    s = str(name).upper()
+    m = re.search(r'(AP\d+P?\d*|F\d+P?\d*)', s)
+    return m.group(1) if m else ''
+
+def detect_region(name):
+    """從專案名猜測地區"""
+    s = str(name)
+    if '南科' in s: return '南科'
+    if '中科' in s: return '中科'
+    if '竹科' in s or '寶山' in s or '新竹' in s: return '竹科'
+    return ''
+
+def default_conditions():
+    """回傳空白的條件字典"""
+    return {
+        'fab_code': '', 'region': '', 'struct_type': '',
+        'floors': 0, 'duration_months': 0,
+        'contract_mode': '', 'with_material': '', 'with_equipment': '',
+        'rebar_price': 0, 'concrete_price': 0, 'formwork_price': 0,
+        'price_index': 0, 'note': '',
+    }
+
+def render_conditions_input(dn, key_prefix, existing=None):
+    """渲染條件輸入表單，回傳條件字典"""
+    cond = existing if existing else default_conditions()
+    # 自動偵測
+    if not cond.get('fab_code'): cond['fab_code'] = detect_fab_code(dn)
+    if not cond.get('region'): cond['region'] = detect_region(dn)
+
+    with st.expander(f"發包條件與市場行情", expanded=False):
+        st.caption("選填 -- 記錄越完整，未來預估越準確")
+
+        st.markdown("**工程特徵**")
+        ec1, ec2, ec3, ec4 = st.columns(4)
+        with ec1:
+            cond['fab_code'] = st.text_input("廠區代號", value=cond.get('fab_code', ''),
+                                              key=f"{key_prefix}_fab_{dn}",
+                                              placeholder="如 AP7P1")
+        with ec2:
+            reg_opts = [''] + REGIONS
+            reg_idx = reg_opts.index(cond['region']) if cond.get('region') in reg_opts else 0
+            cond['region'] = st.selectbox("地區", reg_opts, index=reg_idx,
+                                           key=f"{key_prefix}_reg_{dn}")
+        with ec3:
+            st_opts = [''] + STRUCT_TYPES
+            st_idx = st_opts.index(cond['struct_type']) if cond.get('struct_type') in st_opts else 0
+            cond['struct_type'] = st.selectbox("結構型式", st_opts, index=st_idx,
+                                                key=f"{key_prefix}_struct_{dn}")
+        with ec4:
+            cond['floors'] = st.number_input("樓層數", min_value=0, value=int(cond.get('floors', 0)),
+                                              key=f"{key_prefix}_floors_{dn}")
+
+        mc1, mc2 = st.columns(2)
+        with mc1:
+            cond['duration_months'] = st.number_input("工期（月）", min_value=0,
+                value=int(cond.get('duration_months', 0)), key=f"{key_prefix}_dur_{dn}")
+        with mc2:
+            cm_opts = CONTRACT_MODES
+            cm_idx = cm_opts.index(cond['contract_mode']) if cond.get('contract_mode') in cm_opts else 0
+            cond['contract_mode'] = st.selectbox("發包方式", cm_opts, index=cm_idx,
+                                                  key=f"{key_prefix}_cm_{dn}")
+
+        st.markdown("**帶料 / 帶機具**")
+        bm1, bm2 = st.columns(2)
+        yn_opts = ['', '是', '否']
+        with bm1:
+            wm_idx = yn_opts.index(cond['with_material']) if cond.get('with_material') in yn_opts else 0
+            cond['with_material'] = st.selectbox("是否帶料", yn_opts, index=wm_idx,
+                                                  key=f"{key_prefix}_wmat_{dn}")
+        with bm2:
+            we_idx = yn_opts.index(cond['with_equipment']) if cond.get('with_equipment') in yn_opts else 0
+            cond['with_equipment'] = st.selectbox("是否帶機具", yn_opts, index=we_idx,
+                                                   key=f"{key_prefix}_weq_{dn}")
+
+        st.markdown("**市場行情**")
+        pr1, pr2, pr3, pr4 = st.columns(4)
+        with pr1:
+            cond['rebar_price'] = st.number_input("鋼筋（元/噸）", min_value=0,
+                value=int(cond.get('rebar_price', 0)), step=500, key=f"{key_prefix}_reb_{dn}")
+        with pr2:
+            cond['concrete_price'] = st.number_input("混凝土（元/m3）", min_value=0,
+                value=int(cond.get('concrete_price', 0)), step=100, key=f"{key_prefix}_con_{dn}")
+        with pr3:
+            cond['formwork_price'] = st.number_input("模板（元/m2）", min_value=0,
+                value=int(cond.get('formwork_price', 0)), step=50, key=f"{key_prefix}_form_{dn}")
+        with pr4:
+            cond['price_index'] = st.number_input("營造物價指數", min_value=0.0,
+                value=float(cond.get('price_index', 0)), step=1.0, format="%.1f",
+                key=f"{key_prefix}_pi_{dn}")
+
+        cond['note'] = st.text_area("備註", value=cond.get('note', ''),
+                                     key=f"{key_prefix}_note_{dn}",
+                                     placeholder="特殊條件、趕工情形、同期競標量等", height=68)
+    return cond
 
 # ═══════════════════════════════════════════════════════════════════
 # SQLite
@@ -56,16 +157,19 @@ def init_db():
         for tbl in ('assumption_snapshots', 'cost_snapshots'):
             try: c.execute(f"ALTER TABLE {tbl} ADD COLUMN project_type TEXT DEFAULT '其他'")
             except: pass
+            try: c.execute(f"ALTER TABLE {tbl} ADD COLUMN conditions_json TEXT DEFAULT '{{}}'")
+            except: pass
 init_db()
 
-def db_insert_assumption(dn, pf, cd, ap, tb, ts, items, sf, file_date=None, project_type='其他'):
+def db_insert_assumption(dn, pf, cd, ap, tb, ts, items, sf, file_date=None, project_type='其他', conditions=None):
     rd = file_date if file_date else datetime.now().strftime('%Y-%m-%d')
+    cj = json.dumps(conditions or {}, ensure_ascii=False)
     with _db() as c:
         c.execute("""INSERT INTO assumption_snapshots
             (display_name, project_full, cutoff_date, read_date, area_ping,
-             total_budget, total_settle, items_json, source_filename, project_type)
-            VALUES (?,?,?,?,?,?,?,?,?,?)""",
-            (dn, pf, cd, rd, ap, tb, ts, json.dumps(items, ensure_ascii=False), sf, project_type))
+             total_budget, total_settle, items_json, source_filename, project_type, conditions_json)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+            (dn, pf, cd, rd, ap, tb, ts, json.dumps(items, ensure_ascii=False), sf, project_type, cj))
 
 def db_get_assumption_snaps(dn=None):
     c = _db(); c.row_factory = sqlite3.Row
@@ -78,6 +182,7 @@ def db_get_assumption_snaps(dn=None):
     for r in rows:
         d = dict(r)
         d['items'] = json.loads(d.get('items_json') or '{}')
+        d['conditions'] = json.loads(d.get('conditions_json') or '{}')
         out.append(d)
     return out
 
@@ -86,20 +191,21 @@ def db_get_all_assumption_names():
     rows = c.execute("SELECT DISTINCT display_name FROM assumption_snapshots ORDER BY display_name").fetchall()
     c.close(); return [r[0] for r in rows]
 
-def db_insert_cost(dn, pf, ap, am, ts, bg, items, un, sf, xb, xf, file_date=None, project_type='其他'):
+def db_insert_cost(dn, pf, ap, am, ts, bg, items, un, sf, xb, xf, file_date=None, project_type='其他', conditions=None):
     rd = file_date if file_date else datetime.now().strftime('%Y-%m-%d')
+    cj = json.dumps(conditions or {}, ensure_ascii=False)
     with _db() as c:
         c.execute("""INSERT INTO cost_snapshots
             (display_name, project_full, read_date, area_ping, area_m2,
              total_settle, big_groups_json, items_json, unassigned_count,
-             source_filename, excel_blob, excel_filename, project_type)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+             source_filename, excel_blob, excel_filename, project_type, conditions_json)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (dn, pf, rd, ap, am, ts, json.dumps(bg, ensure_ascii=False),
-             json.dumps(items, ensure_ascii=False), un, sf, xb, xf, project_type))
+             json.dumps(items, ensure_ascii=False), un, sf, xb, xf, project_type, cj))
 
 def db_get_cost_snaps(dn=None):
     c = _db(); c.row_factory = sqlite3.Row
-    cols = "id, display_name, project_full, read_date, area_ping, area_m2, total_settle, big_groups_json, items_json, unassigned_count, source_filename, excel_filename, project_type"
+    cols = "id, display_name, project_full, read_date, area_ping, area_m2, total_settle, big_groups_json, items_json, unassigned_count, source_filename, excel_filename, project_type, conditions_json"
     q = f"SELECT {cols} FROM cost_snapshots"
     params = []
     if dn: q += " WHERE display_name = ?"; params.append(dn)
@@ -110,6 +216,7 @@ def db_get_cost_snaps(dn=None):
         d = dict(r)
         d['big_groups'] = json.loads(d.get('big_groups_json') or '{}')
         d['items'] = json.loads(d.get('items_json') or '[]')
+        d['conditions'] = json.loads(d.get('conditions_json') or '{}')
         out.append(d)
     return out
 
@@ -903,13 +1010,14 @@ def page_assumption():
     unique_dns = list(dict.fromkeys(item['dn'] for item in parsed_list))
     n = min(len(unique_dns), 4)
     cols = st.columns(n if n >= 2 else 1)
-    areas_now = {}; types_now = {}
+    areas_now = {}; types_now = {}; conds_now = {}
     for i, dn in enumerate(unique_dns):
         with cols[i % len(cols)]:
             areas_now[dn] = area_input(dn, areas, 'a')
             guessed = detect_project_type(dn)
             idx = PROJECT_TYPES.index(guessed) if guessed in PROJECT_TYPES else len(PROJECT_TYPES) - 1
             types_now[dn] = st.selectbox("專案類型", PROJECT_TYPES, index=idx, key=f"a_type_{dn}")
+            conds_now[dn] = render_conditions_input(dn, 'a_cond')
             h_count = len(db_get_assumption_snaps(dn))
             if h_count: st.caption(f"已有歷史 {h_count} 筆")
     for dn, ap in areas_now.items():
@@ -972,9 +1080,10 @@ def page_assumption():
                     skipped += 1
                 else:
                     pt = types_now.get(r['display_name'], '其他')
+                    cd = conds_now.get(r['display_name'], {})
                     db_insert_assumption(r['display_name'], info['proj'], info['cutoff'],
                         r['area_ping'], r['total_budget'], r['total_settle'],
-                        r['items'], info['filename'], file_date=rd, project_type=pt)
+                        r['items'], info['filename'], file_date=rd, project_type=pt, conditions=cd)
                     saved += 1
             if saved:
                 st.toast(f"已儲存 {saved} 筆快照", icon='✅')
@@ -1270,13 +1379,14 @@ def page_cost_analysis():
     unique_dns = list(dict.fromkeys(pi['dn'] for pi in infos))
     n = min(len(unique_dns), 4)
     cols = st.columns(n if n >= 2 else 1)
-    a_inputs = {}; v14_types = {}
+    a_inputs = {}; v14_types = {}; v14_conds = {}
     for i, dn in enumerate(unique_dns):
         with cols[i % len(cols)]:
             a_inputs[dn] = area_input(dn, areas, 'v14')
             guessed = detect_project_type(dn)
             idx = PROJECT_TYPES.index(guessed) if guessed in PROJECT_TYPES else len(PROJECT_TYPES) - 1
             v14_types[dn] = st.selectbox("專案類型", PROJECT_TYPES, index=idx, key=f"v14_type_{dn}")
+            v14_conds[dn] = render_conditions_input(dn, 'v14_cond')
             h_snaps = db_get_cost_snaps(dn)
             if h_snaps:
                 last = h_snaps[-1]
@@ -1324,9 +1434,10 @@ def page_cost_analysis():
                         st.warning(f"**{dn}** 日期 {file_date} 已存在，略過")
                     else:
                         pt = v14_types.get(dn, '其他')
+                        cd = v14_conds.get(dn, {})
                         db_insert_cost(dn, proj.get('project_name', ''), ping, m2, t,
                                        big_sum, items_list, len(clf.get('unassigned', {})),
-                                       pi['filename'], xb, xf, file_date=file_date, project_type=pt)
+                                       pi['filename'], xb, xf, file_date=file_date, project_type=pt, conditions=cd)
                     results.append({'dn':dn,'total':t,'ping':ping,'m2':m2,
                                     'big_groups':big_sum,'items':items_list,
                                     'excel_bytes':xb,'filename':xf,
@@ -1565,6 +1676,7 @@ def _db_get_by_type(table, pt):
         d = dict(r)
         if 'items_json' in d: d['items'] = json.loads(d.get('items_json') or '{}')
         if 'big_groups_json' in d: d['big_groups'] = json.loads(d.get('big_groups_json') or '{}')
+        d['conditions'] = json.loads(d.get('conditions_json') or '{}')
         out.append(d)
     return out
 
@@ -1970,6 +2082,29 @@ def _render_assumption_breakdown(assum_snaps, pred_total, target_ping):
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 
+def _snap_to_row(s):
+    """將快照轉為歷史總覽表的一列（含條件欄位）"""
+    ap = s.get('area_ping', 0) or 0
+    c = s.get('conditions', {})
+    if isinstance(c, str):
+        try: c = json.loads(c)
+        except: c = {}
+    return {
+        '廠區': c.get('fab_code', '') or '',
+        '專案': s.get('display_name', ''),
+        '日期': s.get('read_date', '')[:10],
+        '面積(坪)': f"{ap:,.0f}" if ap else '-',
+        '結算': fmt(s.get('total_settle', 0)),
+        '元/坪': fpp(s.get('total_settle', 0), ap),
+        '地區': c.get('region', '') or '',
+        '結構': c.get('struct_type', '') or '',
+        '發包': c.get('contract_mode', '') or '',
+        '帶料': c.get('with_material', '') or '',
+        '帶機具': c.get('with_equipment', '') or '',
+        '鋼筋(元/噸)': f"{c['rebar_price']:,.0f}" if c.get('rebar_price') else '',
+        '備註': c.get('note', '') or '',
+    }
+
 def _render_historical_overview(sel_type):
     st.markdown("## 歷史同類專案")
     cost_snaps = _db_get_by_type('cost_snapshots', sel_type)
@@ -1979,23 +2114,11 @@ def _render_historical_overview(sel_type):
         return
     if cost_snaps:
         st.markdown("#### 造價分析")
-        rows = []
-        for s in cost_snaps:
-            ap = s.get('area_ping', 0) or 0
-            rows.append({'專案': s.get('display_name', ''), '日期': s.get('read_date', '')[:10],
-                         '面積(坪)': f"{ap:,.0f}" if ap else '-',
-                         '結算': fmt(s.get('total_settle', 0)),
-                         '元/坪': fpp(s.get('total_settle', 0), ap)})
+        rows = [_snap_to_row(s) for s in cost_snaps]
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     if assum_snaps:
         st.markdown("#### 假設工程")
-        rows = []
-        for s in assum_snaps:
-            ap = s.get('area_ping', 0) or 0
-            rows.append({'專案': s.get('display_name', ''), '日期': s.get('read_date', '')[:10],
-                         '面積(坪)': f"{ap:,.0f}" if ap else '-',
-                         '結算': fmt(s.get('total_settle', 0)),
-                         '元/坪': fpp(s.get('total_settle', 0), ap)})
+        rows = [_snap_to_row(s) for s in assum_snaps]
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 

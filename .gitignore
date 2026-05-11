@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.db
+*.xlsx
+*.xls
+kg_data/
+.streamlit/
+.claude/
+*.zip

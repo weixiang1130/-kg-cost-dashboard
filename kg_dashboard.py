@@ -78,14 +78,13 @@ def render_conditions_section(unique_dns, conds_dict, key_prefix):
         st.write("")
 
         # 多專案用 tabs 切換；單專案直接顯示
-        if len(unique_dns) == 1:
-            tab_list = [None]  # placeholder
-        else:
+        if len(unique_dns) > 1:
             tab_list = st.tabs(unique_dns)
+        else:
+            tab_list = [st.container()]
 
         for idx, dn in enumerate(unique_dns):
-            container = tab_list[idx] if len(unique_dns) > 1 else st.container()
-            with container:
+            with tab_list[idx]:
                 cond = conds_dict.get(dn, default_conditions())
                 if not cond.get('fab_code'): cond['fab_code'] = detect_fab_code(dn)
                 if not cond.get('region'): cond['region'] = detect_region(dn)

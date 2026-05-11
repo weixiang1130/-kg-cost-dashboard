@@ -60,77 +60,111 @@ def default_conditions():
     }
 
 def render_conditions_input(dn, key_prefix, existing=None):
-    """渲染條件輸入表單，回傳條件字典"""
+    """渲染條件輸入表單（僅回傳條件字典，不渲染 UI）。
+    實際 UI 由 render_conditions_section() 統一渲染於全寬區域。"""
     cond = existing if existing else default_conditions()
-    # 自動偵測
     if not cond.get('fab_code'): cond['fab_code'] = detect_fab_code(dn)
     if not cond.get('region'): cond['region'] = detect_region(dn)
-
-    with st.expander(f"發包條件與市場行情", expanded=False):
-        st.caption("選填 -- 記錄越完整，未來預估越準確")
-
-        st.markdown("**工程特徵**")
-        ec1, ec2, ec3, ec4 = st.columns(4)
-        with ec1:
-            cond['fab_code'] = st.text_input("廠區代號", value=cond.get('fab_code', ''),
-                                              key=f"{key_prefix}_fab_{dn}",
-                                              placeholder="如 AP7P1")
-        with ec2:
-            reg_opts = [''] + REGIONS
-            reg_idx = reg_opts.index(cond['region']) if cond.get('region') in reg_opts else 0
-            cond['region'] = st.selectbox("地區", reg_opts, index=reg_idx,
-                                           key=f"{key_prefix}_reg_{dn}")
-        with ec3:
-            st_opts = [''] + STRUCT_TYPES
-            st_idx = st_opts.index(cond['struct_type']) if cond.get('struct_type') in st_opts else 0
-            cond['struct_type'] = st.selectbox("結構型式", st_opts, index=st_idx,
-                                                key=f"{key_prefix}_struct_{dn}")
-        with ec4:
-            cond['floors'] = st.number_input("樓層數", min_value=0, value=int(cond.get('floors', 0)),
-                                              key=f"{key_prefix}_floors_{dn}")
-
-        mc1, mc2 = st.columns(2)
-        with mc1:
-            cond['duration_months'] = st.number_input("工期（月）", min_value=0,
-                value=int(cond.get('duration_months', 0)), key=f"{key_prefix}_dur_{dn}")
-        with mc2:
-            cm_opts = CONTRACT_MODES
-            cm_idx = cm_opts.index(cond['contract_mode']) if cond.get('contract_mode') in cm_opts else 0
-            cond['contract_mode'] = st.selectbox("發包方式", cm_opts, index=cm_idx,
-                                                  key=f"{key_prefix}_cm_{dn}")
-
-        st.markdown("**帶料 / 帶機具**")
-        bm1, bm2 = st.columns(2)
-        yn_opts = ['', '是', '否']
-        with bm1:
-            wm_idx = yn_opts.index(cond['with_material']) if cond.get('with_material') in yn_opts else 0
-            cond['with_material'] = st.selectbox("是否帶料", yn_opts, index=wm_idx,
-                                                  key=f"{key_prefix}_wmat_{dn}")
-        with bm2:
-            we_idx = yn_opts.index(cond['with_equipment']) if cond.get('with_equipment') in yn_opts else 0
-            cond['with_equipment'] = st.selectbox("是否帶機具", yn_opts, index=we_idx,
-                                                   key=f"{key_prefix}_weq_{dn}")
-
-        st.markdown("**市場行情**")
-        pr1, pr2, pr3, pr4 = st.columns(4)
-        with pr1:
-            cond['rebar_price'] = st.number_input("鋼筋（元/噸）", min_value=0,
-                value=int(cond.get('rebar_price', 0)), step=500, key=f"{key_prefix}_reb_{dn}")
-        with pr2:
-            cond['concrete_price'] = st.number_input("混凝土（元/m3）", min_value=0,
-                value=int(cond.get('concrete_price', 0)), step=100, key=f"{key_prefix}_con_{dn}")
-        with pr3:
-            cond['formwork_price'] = st.number_input("模板（元/m2）", min_value=0,
-                value=int(cond.get('formwork_price', 0)), step=50, key=f"{key_prefix}_form_{dn}")
-        with pr4:
-            cond['price_index'] = st.number_input("營造物價指數", min_value=0.0,
-                value=float(cond.get('price_index', 0)), step=1.0, format="%.1f",
-                key=f"{key_prefix}_pi_{dn}")
-
-        cond['note'] = st.text_area("備註", value=cond.get('note', ''),
-                                     key=f"{key_prefix}_note_{dn}",
-                                     placeholder="特殊條件、趕工情形、同期競標量等", height=68)
     return cond
+
+def render_conditions_section(unique_dns, conds_dict, key_prefix):
+    """在全寬區域渲染發包條件表單，以分頁(Tabs)切換每個專案，
+    內部再以三區塊（工程特徵/發包條件/市場行情）分組，排版更寬敞。"""
+    if not unique_dns:
+        return conds_dict
+
+    with st.expander("發包條件與市場行情（選填）", expanded=False):
+        st.caption("記錄越完整，未來回歸預估越準確。所有欄位皆為選填。")
+        st.write("")
+
+        # 多專案用 tabs 切換；單專案直接顯示
+        if len(unique_dns) == 1:
+            tab_list = [None]  # placeholder
+        else:
+            tab_list = st.tabs(unique_dns)
+
+        for idx, dn in enumerate(unique_dns):
+            container = tab_list[idx] if len(unique_dns) > 1 else st
+            with container if container else st.container():
+                cond = conds_dict.get(dn, default_conditions())
+                if not cond.get('fab_code'): cond['fab_code'] = detect_fab_code(dn)
+                if not cond.get('region'): cond['region'] = detect_region(dn)
+                kp = f"{key_prefix}_{dn}"
+
+                # ── 工程特徵 ──
+                st.markdown('<div style="font-weight:600;color:var(--primary);font-size:.92rem;'
+                            'margin-bottom:8px;"><span class="section-dot"></span>工程特徵</div>',
+                            unsafe_allow_html=True)
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    cond['fab_code'] = st.text_input("廠區代號", value=cond.get('fab_code', ''),
+                                                      key=f"{kp}_fab", placeholder="如 AP7P1")
+                with c2:
+                    reg_opts = [''] + REGIONS
+                    reg_idx = reg_opts.index(cond['region']) if cond.get('region') in reg_opts else 0
+                    cond['region'] = st.selectbox("地區", reg_opts, index=reg_idx, key=f"{kp}_reg")
+                with c3:
+                    st_opts = [''] + STRUCT_TYPES
+                    st_idx = st_opts.index(cond['struct_type']) if cond.get('struct_type') in st_opts else 0
+                    cond['struct_type'] = st.selectbox("結構型式", st_opts, index=st_idx, key=f"{kp}_st")
+
+                c4, c5 = st.columns(2)
+                with c4:
+                    cond['floors'] = st.number_input("樓層數", min_value=0,
+                        value=int(cond.get('floors', 0)), key=f"{kp}_fl")
+                with c5:
+                    cond['duration_months'] = st.number_input("工期（月）", min_value=0,
+                        value=int(cond.get('duration_months', 0)), key=f"{kp}_dur")
+
+                st.write("")  # 區塊間距
+
+                # ── 發包條件 ──
+                st.markdown('<div style="font-weight:600;color:var(--primary);font-size:.92rem;'
+                            'margin-bottom:8px;"><span class="section-dot"></span>發包條件</div>',
+                            unsafe_allow_html=True)
+                b1, b2, b3 = st.columns(3)
+                with b1:
+                    cm_opts = CONTRACT_MODES
+                    cm_idx = cm_opts.index(cond['contract_mode']) if cond.get('contract_mode') in cm_opts else 0
+                    cond['contract_mode'] = st.selectbox("發包方式", cm_opts, index=cm_idx, key=f"{kp}_cm")
+                yn_opts = ['', '是', '否']
+                with b2:
+                    wm_idx = yn_opts.index(cond['with_material']) if cond.get('with_material') in yn_opts else 0
+                    cond['with_material'] = st.selectbox("是否帶料", yn_opts, index=wm_idx, key=f"{kp}_wm")
+                with b3:
+                    we_idx = yn_opts.index(cond['with_equipment']) if cond.get('with_equipment') in yn_opts else 0
+                    cond['with_equipment'] = st.selectbox("是否帶機具", yn_opts, index=we_idx, key=f"{kp}_we")
+
+                st.write("")  # 區塊間距
+
+                # ── 市場行情 ──
+                st.markdown('<div style="font-weight:600;color:var(--primary);font-size:.92rem;'
+                            'margin-bottom:8px;"><span class="section-dot"></span>市場行情</div>',
+                            unsafe_allow_html=True)
+                p1, p2 = st.columns(2)
+                with p1:
+                    cond['rebar_price'] = st.number_input("鋼筋（元/噸）", min_value=0,
+                        value=int(cond.get('rebar_price', 0)), step=500, key=f"{kp}_reb")
+                with p2:
+                    cond['concrete_price'] = st.number_input("混凝土（元/m3）", min_value=0,
+                        value=int(cond.get('concrete_price', 0)), step=100, key=f"{kp}_con")
+                p3, p4 = st.columns(2)
+                with p3:
+                    cond['formwork_price'] = st.number_input("模板（元/m2）", min_value=0,
+                        value=int(cond.get('formwork_price', 0)), step=50, key=f"{kp}_frm")
+                with p4:
+                    cond['price_index'] = st.number_input("營造物價指數", min_value=0.0,
+                        value=float(cond.get('price_index', 0)), step=1.0, format="%.1f", key=f"{kp}_pi")
+
+                st.write("")  # 區塊間距
+
+                # ── 備註 ──
+                cond['note'] = st.text_area("備註", value=cond.get('note', ''), key=f"{kp}_note",
+                                             placeholder="特殊條件、趕工情形、同期競標量等", height=80)
+
+                conds_dict[dn] = cond
+
+    return conds_dict
 
 # ═══════════════════════════════════════════════════════════════════
 # SQLite
@@ -1020,6 +1054,7 @@ def page_assumption():
             conds_now[dn] = render_conditions_input(dn, 'a_cond')
             h_count = len(db_get_assumption_snaps(dn))
             if h_count: st.caption(f"已有歷史 {h_count} 筆")
+    conds_now = render_conditions_section(unique_dns, conds_now, 'a_cond')
     for dn, ap in areas_now.items():
         sync_area(dn, ap, areas)
 
@@ -1391,6 +1426,7 @@ def page_cost_analysis():
             if h_snaps:
                 last = h_snaps[-1]
                 st.caption(f"歷史 {len(h_snaps)} 筆　·　上次 {fmt(last['total_settle'])}")
+    v14_conds = render_conditions_section(unique_dns, v14_conds, 'v14_cond')
     for dn, ap in a_inputs.items():
         sync_area(dn, ap, areas)
 

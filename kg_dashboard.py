@@ -456,61 +456,67 @@ def _load_v14():
 # ═══════════════════════════════════════════════════════════════════
 def inject_style():
     st.markdown("""<style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
     :root {
-        --bg:#F8FAFC; --surface:#FFFFFF; --primary:#1E40AF; --action:#3B82F6;
-        --text:#1E293B; --muted:#64748B; --accent:#DBEAFE;
+        --bg:#F4F7FB; --surface:#ffffff; --surface-2:#F8FAFC; --surface-3:#F1F5F9;
+        --primary:#1D4ED8; --primary-50:#EFF6FF; --primary-100:#DBEAFE; --primary-300:#93C5FD;
+        --action:#3B82F6;
+        --text:#0F1729; --text-2:#334155; --muted:#64748B;
+        --accent:#DBEAFE;
         --amber:#D97706; --amber-light:#FEF3C7; --amber-glow:rgba(217,119,6,0.12);
-        --border:#E2E8F0; --header-bg:#EDF2F7; --card-shadow:0 1px 3px rgba(15,23,42,0.06),0 1px 2px rgba(15,23,42,0.04);
-        --card-shadow-hover:0 8px 25px rgba(15,23,42,0.1),0 4px 10px rgba(15,23,42,0.06);
-        --mono:"Fira Code","JetBrains Mono","Roboto Mono",ui-monospace,Consolas,monospace;
-        --radius:10px; --radius-lg:14px;
+        --good:#059669; --good-light:#D1FAE5;
+        --bad:#DC2626; --bad-light:#FEE2E2;
+        --border:#E2E8F0; --header-bg:#F8FAFC;
+        --card-shadow:0 1px 2px rgba(15,23,41,.04),0 1px 3px rgba(15,23,41,.06);
+        --card-shadow-hover:0 4px 12px rgba(15,23,41,.08),0 2px 6px rgba(15,23,41,.04);
+        --mono:"JetBrains Mono","Fira Code","Roboto Mono",ui-monospace,Consolas,monospace;
+        --radius:12px; --radius-sm:8px; --radius-lg:16px;
     }
     html, body, [class*="css"], .stApp {
         font-family: "Noto Sans TC","Microsoft JhengHei",-apple-system,"Segoe UI",sans-serif;
         color: var(--text);
     }
     .stApp { background: var(--bg); }
-    .block-container { padding-top: 1.8rem; padding-bottom: 3rem; max-width: 1280px; }
+    .block-container { padding-top: 1.5rem; padding-bottom: 3rem; max-width: 1280px; }
     [data-testid="stHeader"] { background: transparent; }
-    section[data-testid="stSidebar"] { display: none; }
 
-    .logo-bar {
-        display: flex; align-items: center; gap: 16px;
-        padding: 12px 22px; margin-bottom: 1.6rem;
-        background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 50%, #2563EB 100%);
-        border-radius: var(--radius-lg); border: none;
-        box-shadow: 0 4px 15px rgba(30,64,175,0.2), 0 1px 3px rgba(30,64,175,0.1);
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background: var(--surface); border-right: 1px solid var(--border);
+        box-shadow: 1px 0 4px rgba(15,23,41,.03);
     }
-    .logo-bar img { height: 42px; filter: brightness(10); }
-    .logo-bar-text {
-        font-weight: 700; font-size: 1.15rem; color: #FFFFFF;
-        letter-spacing: 2px;
+    section[data-testid="stSidebar"] .block-container { padding-top: 1rem; }
+    section[data-testid="stSidebar"] [data-testid="stRadio"] label {
+        font-size: .9rem; font-weight: 500; padding: 8px 12px;
+        border-radius: var(--radius-sm); transition: background .15s;
     }
-    .logo-tagline {
-        font-size: .72rem; color: rgba(255,255,255,0.7); letter-spacing: 3px;
-        padding-top: 4px; font-weight: 400;
+    section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+        background: var(--primary-50);
     }
 
-    h1 { font-weight: 700; font-size: 1.7rem; margin-bottom: .3rem;
-         letter-spacing: .5px; color: var(--primary);
-         background: linear-gradient(135deg, #1E3A8A, #3B82F6);
-         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-         background-clip: text; }
-    h2 { font-weight: 600; font-size: 1.15rem; margin-top: 1.8rem; margin-bottom: .8rem;
-         color: var(--primary); letter-spacing: .3px;
-         padding-bottom: .4rem; border-bottom: 2px solid var(--amber-light); display: inline-block; }
-    h3 { font-weight: 600; font-size: 1rem; color: var(--primary); margin-top: 1rem; }
-    h4, h5 { font-weight: 600; color: var(--primary); }
+    /* Page header pattern */
+    .crumb { font-size: 12px; color: var(--muted); margin-bottom: 4px; letter-spacing: .3px; }
+    .page-title { font-weight: 700 !important; font-size: 24px !important; color: var(--text) !important;
+         background: none !important; -webkit-text-fill-color: var(--text) !important;
+         margin-bottom: 4px !important; letter-spacing: 0 !important; }
+    .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.2rem; }
+
+    h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: .3rem;
+         letter-spacing: 0; color: var(--text); }
+    h2 { font-weight: 600; font-size: 1.1rem; margin-top: 1.6rem; margin-bottom: .7rem;
+         color: var(--text-2); letter-spacing: .2px;
+         padding-bottom: .35rem; border-bottom: 2px solid var(--primary-100); display: inline-block; }
+    h3 { font-weight: 600; font-size: 1rem; color: var(--text-2); margin-top: 1rem; }
+    h4, h5 { font-weight: 600; color: var(--text-2); }
     p, label, .stMarkdown { color: var(--text); }
     [data-testid="stCaptionContainer"], .stCaption, small { color: var(--muted) !important; }
 
-    /* Metric card — left accent stripe + refined shadow */
+    /* KPI / Metric card — left 3px accent stripe */
     [data-testid="stMetric"] {
         background: var(--surface);
-        padding: 18px 22px 18px 18px; border-radius: var(--radius);
+        padding: 16px 20px 16px 18px; border-radius: var(--radius);
         border: 1px solid var(--border);
-        border-left: 4px solid var(--action);
+        border-left: 3px solid var(--action);
         box-shadow: var(--card-shadow);
         transition: all .2s ease;
     }
@@ -519,49 +525,49 @@ def inject_style():
         transform: translateY(-1px);
     }
     [data-testid="stMetricLabel"] p {
-        font-size:.74rem !important; color: var(--muted) !important;
+        font-size:11.5px !important; color: var(--muted) !important;
         font-weight:600; letter-spacing:.8px; text-transform: uppercase;
     }
     [data-testid="stMetricValue"] {
-        font-size:1.5rem !important; font-weight:700; color: var(--text) !important;
+        font-size:26px !important; font-weight:700; color: var(--text) !important;
         font-family: var(--mono); letter-spacing: 0;
     }
     [data-testid="stMetricDelta"] { font-size:.78rem !important; }
     [data-testid="stMetricDelta"] svg { width: 14px; height: 14px; }
 
-    /* Buttons — gradient primary, ghost secondary */
+    /* Buttons — ghost default, gradient primary */
     .stButton>button, .stDownloadButton>button {
-        border-radius: 8px; font-weight: 600; font-size: .88rem; letter-spacing: .3px;
-        border: 1.5px solid var(--action); color: var(--action); background: transparent;
+        border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; letter-spacing: .2px;
+        border: 1px solid var(--border); color: var(--text-2); background: var(--surface);
         padding: .5rem 1.2rem; cursor: pointer;
         transition: all .2s cubic-bezier(.4,0,.2,1);
     }
     .stButton>button:hover, .stDownloadButton>button:hover {
-        background: var(--accent); color: var(--primary); border-color: var(--action);
-        box-shadow: 0 2px 8px rgba(59,130,246,0.15);
+        background: var(--surface-2); border-color: var(--action); color: var(--primary);
+        box-shadow: 0 2px 6px rgba(59,130,246,0.1);
     }
     .stButton>button[kind="primary"], .stDownloadButton>button[kind="primary"] {
-        background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+        background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
         border-color: transparent; color: #ffffff;
-        box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+        box-shadow: 0 2px 8px rgba(29,78,216,0.25);
     }
     .stButton>button[kind="primary"]:hover, .stDownloadButton>button[kind="primary"]:hover {
         background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
-        box-shadow: 0 4px 16px rgba(30,64,175,0.35); transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30,64,175,0.3); transform: translateY(-1px);
     }
     .stButton>button:disabled {
-        background: #F1F5F9; color: #CBD5E1; border-color: #E2E8F0; box-shadow: none;
+        background: var(--surface-3); color: #CBD5E1; border-color: var(--border); box-shadow: none;
     }
 
-    /* File uploader */
+    /* File uploader / Dropzone */
     div[data-testid="stFileUploader"] section {
-        padding: 1.4rem; border: 2px dashed #93C5FD; border-radius: var(--radius);
-        background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+        padding: 1.4rem; border: 2px dashed var(--primary-300); border-radius: var(--radius);
+        background: var(--primary-50);
         transition: all .2s ease;
     }
     div[data-testid="stFileUploader"] section:hover {
-        border-color: var(--action); background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-        box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+        border-color: var(--action); background: var(--primary-100);
+        box-shadow: 0 4px 12px rgba(59,130,246,0.08);
     }
 
     /* Tabs — pill style */
@@ -691,10 +697,11 @@ def inject_style():
         background: var(--surface); box-shadow: var(--card-shadow);
     }
     .stDataFrame thead tr th, [data-testid="stDataFrame"] thead tr th {
-        background: linear-gradient(180deg, #F8FAFC 0%, var(--header-bg) 100%) !important;
-        color: var(--primary) !important;
-        font-weight: 600 !important; font-size: .83rem !important;
-        letter-spacing: .3px; border-bottom: 2px solid var(--border) !important;
+        background: var(--surface-2) !important;
+        color: var(--muted) !important;
+        font-weight: 600 !important; font-size: 11.5px !important;
+        letter-spacing: .5px; text-transform: uppercase;
+        border-bottom: 2px solid var(--border) !important;
         border-right: none !important; border-left: none !important;
     }
     .stDataFrame tbody tr td, [data-testid="stDataFrame"] tbody tr td {
@@ -713,8 +720,9 @@ def inject_style():
         font-size: .88rem;
     }
     table.dashboard-table thead th {
-        background: linear-gradient(180deg, #F8FAFC, var(--header-bg)); color: var(--primary);
-        font-weight: 600; font-size: .8rem; letter-spacing: .5px;
+        background: var(--surface-2); color: var(--muted);
+        font-weight: 600; font-size: 11.5px; letter-spacing: .5px;
+        text-transform: uppercase;
         padding: 12px 14px; text-align: left;
         border-bottom: 2px solid var(--border);
     }
@@ -736,34 +744,27 @@ def inject_style():
     }
     .pill-muted { background: #F1F5F9; color: var(--muted); }
 
-    /* Nav card (home page) — icon + gradient top border */
+    /* Nav card (home page) */
     .nav-card {
         background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 24px 22px; transition: all .25s cubic-bezier(.4,0,.2,1);
+        border-radius: var(--radius);
+        padding: 22px 20px; transition: all .2s ease;
         box-shadow: var(--card-shadow);
-        position: relative; overflow: hidden;
-    }
-    .nav-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-        background: linear-gradient(90deg, var(--action), var(--amber));
-        opacity: 0; transition: opacity .25s ease;
     }
     .nav-card:hover {
         border-color: var(--action);
         box-shadow: var(--card-shadow-hover);
-        transform: translateY(-3px);
+        transform: translateY(-2px);
     }
-    .nav-card:hover::before { opacity: 1; }
     .nav-card-icon {
-        width: 44px; height: 44px; border-radius: 12px;
+        width: 40px; height: 40px; border-radius: 10px;
         display: flex; align-items: center; justify-content: center;
-        margin-bottom: 14px; font-size: 20px;
+        margin-bottom: 12px; font-size: 18px;
     }
-    .nav-icon-blue { background: linear-gradient(135deg, #DBEAFE, #BFDBFE); color: #1E40AF; }
-    .nav-icon-amber { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; }
-    .nav-icon-green { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); color: #065F46; }
-    .nav-icon-purple { background: linear-gradient(135deg, #EDE9FE, #DDD6FE); color: #5B21B6; }
+    .nav-icon-blue { background: var(--primary-50); color: var(--primary); }
+    .nav-icon-amber { background: var(--amber-light); color: var(--amber); }
+    .nav-icon-green { background: var(--good-light); color: var(--good); }
+    .nav-icon-purple { background: #EDE9FE; color: #5B21B6; }
 
     [data-testid="stExpander"] {
         border-radius: var(--radius); border: 1px solid var(--border) !important;
@@ -880,10 +881,36 @@ def sync_area(dn, ping, areas):
 # ═══════════════════════════════════════════════════════════════════
 def main():
     st.set_page_config(page_title="成本管理監測系統", page_icon="◆",
-                       layout="wide", initial_sidebar_state="collapsed")
+                       layout="wide", initial_sidebar_state="expanded")
     inject_style()
-    render_logo_bar()
-    if 'page' not in st.session_state: st.session_state['page'] = 'home'
+
+    # Sidebar navigation
+    with st.sidebar:
+        st.markdown(
+            '<div style="padding:8px 0 16px 0;">'
+            '<div style="font-weight:700;font-size:1.1rem;color:var(--text);">根基營造</div>'
+            '<div style="font-size:12px;color:var(--muted);letter-spacing:1px;">KEDGE · 成本監測</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("---")
+        page_map = {
+            "總覽儀表板": "home",
+            "假設工程分析": "assumption",
+            "造價分析": "cost_analysis",
+            "投標預估": "prediction",
+            "歷史記錄": "history",
+        }
+        if 'page' not in st.session_state:
+            st.session_state['page'] = 'home'
+        current_label = [k for k, v in page_map.items() if v == st.session_state['page']]
+        current_label = current_label[0] if current_label else "總覽儀表板"
+        selected = st.radio("導航", list(page_map.keys()), index=list(page_map.keys()).index(current_label),
+                            label_visibility="collapsed")
+        if page_map[selected] != st.session_state['page']:
+            st.session_state['page'] = page_map[selected]
+            st.rerun()
+
     p = st.session_state['page']
     if p == 'home': page_home()
     elif p == 'assumption': page_assumption()
@@ -895,8 +922,9 @@ def main():
 # 首頁
 # ═══════════════════════════════════════════════════════════════════
 def page_home():
-    st.title("成本管理自動化監測系統")
-    st.caption("讀取 KG 預算發包請款結算一覽表，自動分析並追蹤歷史快照")
+    st.markdown('<div class="crumb">總覽</div>', unsafe_allow_html=True)
+    st.markdown('<h1 class="page-title">總覽儀表板</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="page-sub">KG 一覽表分析 · 假設工程追蹤 · 造價統計 · 投標預估</div>', unsafe_allow_html=True)
     st.write("")
 
     v14 = _load_v14()
@@ -957,9 +985,9 @@ def page_home():
 # 假設工程分析
 # ═══════════════════════════════════════════════════════════════════
 def page_assumption():
-    back_button()
-    st.title("假設工程分析")
-    st.caption("上傳 KG 一覽表 → 設定面積 → 即時預覽 → 儲存快照")
+    st.markdown('<div class="crumb">總覽 / 假設工程分析</div>', unsafe_allow_html=True)
+    st.markdown('<h1 class="page-title">假設工程分析</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="page-sub">上傳 KG 一覽表 · 設定面積 · 即時預覽 · 儲存快照</div>', unsafe_allow_html=True)
     areas = load_areas()
 
     # 1. 上傳
@@ -1317,9 +1345,9 @@ def _tab_assumption_trend(dn, all_current=None):
 # 造價分析
 # ═══════════════════════════════════════════════════════════════════
 def page_cost_analysis():
-    back_button()
-    st.title("造價分析")
-    st.caption("上傳 KG 一覽表 → 設定面積 → 產出八大類造價 Excel")
+    st.markdown('<div class="crumb">總覽 / 造價分析</div>', unsafe_allow_html=True)
+    st.markdown('<h1 class="page-title">造價分析</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="page-sub">上傳 KG 一覽表 · 設定面積 · 產出八大類造價 Excel</div>', unsafe_allow_html=True)
     v14 = _load_v14()
     if not v14:
         st.error("找不到 kg_cost_analysis_v14.py（請放在同一資料夾）"); return
@@ -1536,9 +1564,9 @@ def _render_cost_result(r):
 # 歷史記錄
 # ═══════════════════════════════════════════════════════════════════
 def page_history():
-    back_button()
-    st.title("歷史記錄")
-    st.caption("所有過往快照（SQLite）")
+    st.markdown('<div class="crumb">總覽 / 歷史記錄</div>', unsafe_allow_html=True)
+    st.markdown('<h1 class="page-title">歷史記錄</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="page-sub">所有過往快照（SQLite）· 下載 Excel · 趨勢圖</div>', unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["假設工程", "造價分析"])
     with tab1: _history_assumption()
     with tab2: _history_cost()
@@ -1906,9 +1934,9 @@ def _render_r2_guide():
 
 
 def page_prediction():
-    back_button()
-    st.title("投標預估")
-    st.caption("依專案類型 + 樓地板面積，回歸預估工程造價")
+    st.markdown('<div class="crumb">總覽 / 投標預估</div>', unsafe_allow_html=True)
+    st.markdown('<h1 class="page-title">投標預估</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="page-sub">依專案類型 + 樓地板面積，回歸預估工程造價</div>', unsafe_allow_html=True)
 
     a_counts, c_counts = _db_get_type_counts()
     all_types = sorted(set(list(a_counts.keys()) + list(c_counts.keys()) + PROJECT_TYPES))

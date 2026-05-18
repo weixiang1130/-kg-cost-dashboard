@@ -4,6 +4,22 @@
 
 ---
 
+## [v1.5.0] - 2026-05-18
+
+### Changed
+- **UI/UX 全面改版**：依據 React mockup 設計稿重新設計整體介面
+  - 啟用左側邊欄導航（Logo + 頁面切換 + 版本資訊）
+  - 新設計色彩系統：bg #F4F7FB、surface 三層、primary blue 完整色階
+  - 頁面標題改為麵包屑 + 大標題 + 副標題三段式
+  - KPI 卡片：3px 左側色條、11.5px 大寫標籤、26px mono 數值
+  - 按鈕：ghost 預設 + gradient primary，8px 圓角
+  - 表格：surface-2 表頭、uppercase muted 欄位名、hover 效果
+  - 檔案上傳：虛線邊框 + primary-50 背景
+  - 移除頂部 logo-bar，改由 sidebar 承載品牌識別
+  - 字體加入 JetBrains Mono 作為等寬字體
+
+---
+
 ## [v1.4.1] - 2026-05-11
 
 ### Changed

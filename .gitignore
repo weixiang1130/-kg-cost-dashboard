@@ -1,16 +1,53 @@
 __pycache__/
 *.pyc
+*.pyo
 
-# === 公司機密資料 ===
+# === 公司機密資料（絕對不可上傳）===
+# 資料庫（含所有分析快照、Excel blob）
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# 原始資料檔（KG 一覽表等）
 *.xlsx
 *.xls
 *.csv
+*.xlsm
+
+# 面積設定（含專案名稱）
 kg_areas.json
+
+# 上傳/暫存資料夾
 kg_data/
 files/
+
+# 分析產出
+*.pdf
+output/
+reports/
+exports/
 
 # === 環境設定 ===
 .streamlit/
 .claude/
 *.zip
+.env
+.env.*
+
+# === Electron / Node ===
+electron-app/node_modules/
+electron-app/dist/
+electron-app/dist-electron/
+electron-app/.vite/
+node_modules/
+
+# === 系統檔 ===
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# === 測試暫存 ===
+.pytest_cache/
+htmlcov/
+*.coverage

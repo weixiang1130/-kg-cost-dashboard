@@ -4,19 +4,23 @@
 
 ---
 
-## [v1.5.0] - 2026-05-18
+## [v2.0.0] - 2026-05-21
 
 ### Changed
-- **UI/UX 全面改版**：依據 React mockup 設計稿重新設計整體介面
-  - 啟用左側邊欄導航（Logo + 頁面切換 + 版本資訊）
-  - 新設計色彩系統：bg #F4F7FB、surface 三層、primary blue 完整色階
-  - 頁面標題改為麵包屑 + 大標題 + 副標題三段式
-  - KPI 卡片：3px 左側色條、11.5px 大寫標籤、26px mono 數值
-  - 按鈕：ghost 預設 + gradient primary，8px 圓角
-  - 表格：surface-2 表頭、uppercase muted 欄位名、hover 效果
-  - 檔案上傳：虛線邊框 + primary-50 背景
-  - 移除頂部 logo-bar，改由 sidebar 承載品牌識別
-  - 字體加入 JetBrains Mono 作為等寬字體
+- **UI/UX 全面改版（Hallmark · modern-minimal · utilitarian-technical）**
+  - OKLCH-ready 語義化色彩 token 系統（--color-paper / surface / ink / primary / accent / good / bad）
+  - 4pt 間距系統（--space-xs 到 --space-2xl）
+  - 側邊欄：Logo mark + 公司名稱 + 無圓點導航 + 版本資訊
+  - 頁面標題：麵包屑 + 24px 大標題 + 13px 副標
+  - KPI 卡片：3px 左色條 + uppercase 標籤 + 26px mono 數值 + hover 浮起
+  - 按鈕：ghost 預設（白底 + 邊框）+ gradient primary
+  - 分頁標籤：pill 膠囊式（surface-2 底 + 白色啟用態）
+  - 表格：surface-2 表頭 + uppercase 11.5px 欄名 + hover 列
+  - 首頁新增 KPI 統計列（專案數 / 快照數 / 假設工程 / 造價分析）
+  - h2 標題加入 4px 藍色左 accent bar
+  - 全域自訂 scrollbar（6px 窄軌）
+  - SVG icon 統一 stroke-width 1.8
+  - 移除舊版 gradient-text h1、logo-bar、amber 底線 h2
 
 ---
 

@@ -456,341 +456,428 @@ def _load_v14():
 # ═══════════════════════════════════════════════════════════════════
 def inject_style():
     st.markdown("""<style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
+    /* Hallmark · macrostructure: Workbench · tone: utilitarian-technical · genre: modern-minimal
+     * P5 H5 E4 S5 R5 V4 */
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
+
     :root {
-        --bg:#F4F7FB; --surface:#ffffff; --surface-2:#F8FAFC; --surface-3:#F1F5F9;
-        --primary:#1D4ED8; --primary-50:#EFF6FF; --primary-100:#DBEAFE; --primary-300:#93C5FD;
-        --action:#3B82F6;
-        --text:#0F1729; --text-2:#334155; --muted:#64748B;
-        --accent:#DBEAFE;
-        --amber:#D97706; --amber-light:#FEF3C7; --amber-glow:rgba(217,119,6,0.12);
-        --good:#059669; --good-light:#D1FAE5;
-        --bad:#DC2626; --bad-light:#FEE2E2;
-        --border:#E2E8F0; --header-bg:#F8FAFC;
-        --card-shadow:0 1px 2px rgba(15,23,41,.04),0 1px 3px rgba(15,23,41,.06);
-        --card-shadow-hover:0 4px 12px rgba(15,23,41,.08),0 2px 6px rgba(15,23,41,.04);
-        --mono:"JetBrains Mono","Fira Code","Roboto Mono",ui-monospace,Consolas,monospace;
-        --radius:12px; --radius-sm:8px; --radius-lg:16px;
+        /* Paper & surface */
+        --color-paper:    #F4F7FB;
+        --color-surface:  #ffffff;
+        --color-surface-2:#F8FAFC;
+        --color-surface-3:#F1F5F9;
+
+        /* Primary blue scale */
+        --color-primary-50: #EFF6FF;
+        --color-primary-100:#DBEAFE;
+        --color-primary-200:#BFDBFE;
+        --color-primary-300:#93C5FD;
+        --color-primary-400:#60A5FA;
+        --color-primary-500:#3B82F6;
+        --color-primary-600:#2563EB;
+        --color-primary-700:#1D4ED8;
+        --color-primary-800:#1E40AF;
+        --color-primary-900:#1E3A8A;
+
+        /* Accent amber */
+        --color-accent:     #D97706;
+        --color-accent-soft:#FEF3C7;
+
+        /* Semantic */
+        --color-good:     #059669;
+        --color-good-soft:#D1FAE5;
+        --color-warn:     #D97706;
+        --color-warn-soft:#FEF3C7;
+        --color-bad:      #DC2626;
+        --color-bad-soft: #FEE2E2;
+
+        /* Ink */
+        --color-ink:    #0F1729;
+        --color-ink-2:  #334155;
+        --color-muted:  #64748B;
+
+        /* Chrome */
+        --color-border:       #E2E8F0;
+        --color-border-strong:#CBD5E1;
+
+        /* Depth */
+        --shadow-sm: 0 1px 2px rgba(15,23,41,.04), 0 1px 3px rgba(15,23,41,.06);
+        --shadow-md: 0 2px 4px rgba(15,23,41,.04), 0 8px 24px rgba(15,23,41,.06);
+        --shadow-lg: 0 8px 32px rgba(15,23,41,.10);
+
+        /* Type */
+        --font-body: "Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,system-ui,sans-serif;
+        --font-mono: "JetBrains Mono","Fira Code",ui-monospace,Consolas,monospace;
+
+        /* Space (4pt scale) */
+        --space-xs: 4px;  --space-sm: 8px;  --space-md: 16px;
+        --space-lg: 24px; --space-xl: 32px; --space-2xl:48px;
+
+        /* Radius */
+        --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+
+        /* Motion */
+        --ease-out: cubic-bezier(.2,0,0,1);
+        --dur-fast: 150ms; --dur-norm: 200ms;
     }
+
+    /* ─── Reset ─── */
     html, body, [class*="css"], .stApp {
-        font-family: "Noto Sans TC","Microsoft JhengHei",-apple-system,"Segoe UI",sans-serif;
-        color: var(--text);
+        font-family: var(--font-body); color: var(--color-ink);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: 'tnum' 1;
     }
-    .stApp { background: var(--bg); }
-    .block-container { padding-top: 1.5rem; padding-bottom: 3rem; max-width: 1280px; }
+    .stApp { background: var(--color-paper); }
+    .block-container { padding: 1.5rem 2rem 3rem; max-width: 1420px; }
     [data-testid="stHeader"] { background: transparent; }
 
-    /* Sidebar styling */
+    /* ─── Sidebar ─── */
     section[data-testid="stSidebar"] {
-        background: var(--surface); border-right: 1px solid var(--border);
-        box-shadow: 1px 0 4px rgba(15,23,41,.03);
+        background: var(--color-surface);
+        border-right: 1px solid var(--color-border);
     }
-    section[data-testid="stSidebar"] .block-container { padding-top: 1rem; }
+    section[data-testid="stSidebar"] .block-container {
+        padding: 0.8rem 0.6rem;
+    }
+    section[data-testid="stSidebar"] [data-testid="stRadio"] > div {
+        gap: 2px !important;
+    }
     section[data-testid="stSidebar"] [data-testid="stRadio"] label {
-        font-size: .9rem; font-weight: 500; padding: 8px 12px;
-        border-radius: var(--radius-sm); transition: background .15s;
+        font-size: 13px; font-weight: 500; color: var(--color-ink-2);
+        padding: 9px 14px; border-radius: var(--radius-sm);
+        transition: all var(--dur-fast) var(--ease-out);
+        gap: 11px;
     }
     section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-        background: var(--primary-50);
+        background: var(--color-surface-3); color: var(--color-ink);
     }
+    section[data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"],
+    section[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
+        background: var(--color-primary-50); color: var(--color-primary-700); font-weight: 600;
+    }
+    /* hide radio circles */
+    section[data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] > label > div:first-child {
+        display: none;
+    }
+    .sidebar-logo {
+        display: flex; align-items: center; gap: 12px;
+        padding: 6px 10px 4px;
+    }
+    .sidebar-logo-mark {
+        width: 34px; height: 34px; border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, var(--color-primary-900), var(--color-primary-500));
+        box-shadow: 0 4px 12px rgba(30,64,175,.25);
+        color: #fff; font-weight: 800; font-size: 14px;
+    }
+    .sidebar-logo-text { font-weight: 700; font-size: 14px; color: var(--color-ink); letter-spacing: 1px; }
+    .sidebar-logo-sub { font-size: 10.5px; color: var(--color-muted); letter-spacing: 1.5px;
+        margin-top: 2px; font-family: var(--font-mono); }
+    .sidebar-section { font-size: 10.5px; color: var(--color-muted); text-transform: uppercase;
+        letter-spacing: 1.2px; padding: 14px 14px 6px; font-weight: 600; }
+    .sidebar-foot { border-top: 1px solid var(--color-border); padding-top: 12px; margin-top: 8px; }
+    .sidebar-version { font-size: 10px; color: var(--color-muted); padding: 8px 14px 0;
+        letter-spacing: 1px; font-family: var(--font-mono); }
 
-    /* Page header pattern */
-    .crumb { font-size: 12px; color: var(--muted); margin-bottom: 4px; letter-spacing: .3px; }
-    .page-title { font-weight: 700 !important; font-size: 24px !important; color: var(--text) !important;
-         background: none !important; -webkit-text-fill-color: var(--text) !important;
-         margin-bottom: 4px !important; letter-spacing: 0 !important; }
-    .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.2rem; }
+    /* ─── Page header ─── */
+    .crumb { font-size: 11.5px; color: var(--color-muted); margin-bottom: 4px;
+        letter-spacing: .3px; }
+    .page-title {
+        font-weight: 700 !important; font-size: 24px !important;
+        color: var(--color-ink) !important; letter-spacing: -0.3px !important;
+        background: none !important; -webkit-text-fill-color: var(--color-ink) !important;
+        margin: 0 0 4px 0 !important;
+    }
+    .page-sub { font-size: 13px; color: var(--color-muted); margin-bottom: 20px; max-width: 560px; }
 
-    h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: .3rem;
-         letter-spacing: 0; color: var(--text); }
-    h2 { font-weight: 600; font-size: 1.1rem; margin-top: 1.6rem; margin-bottom: .7rem;
-         color: var(--text-2); letter-spacing: .2px;
-         padding-bottom: .35rem; border-bottom: 2px solid var(--primary-100); display: inline-block; }
-    h3 { font-weight: 600; font-size: 1rem; color: var(--text-2); margin-top: 1rem; }
-    h4, h5 { font-weight: 600; color: var(--text-2); }
-    p, label, .stMarkdown { color: var(--text); }
-    [data-testid="stCaptionContainer"], .stCaption, small { color: var(--muted) !important; }
+    /* ─── Headings ─── */
+    h1 { font-weight: 700; font-size: 1.5rem; color: var(--color-ink); letter-spacing: -0.2px; }
+    h2 { font-weight: 600; font-size: 14px; margin-top: 1.5rem; margin-bottom: .6rem;
+         color: var(--color-ink); letter-spacing: .2px;
+         display: inline-flex; align-items: center; gap: 8px; }
+    h2::before { content: ''; width: 4px; height: 16px; border-radius: 2px;
+         background: var(--color-primary-500); display: inline-block; }
+    h3 { font-weight: 600; font-size: 14px; color: var(--color-ink); margin-top: .8rem; }
+    h4, h5 { font-weight: 600; color: var(--color-ink-2); }
+    p, label, .stMarkdown { color: var(--color-ink); }
+    [data-testid="stCaptionContainer"], .stCaption, small { color: var(--color-muted) !important; }
 
-    /* KPI / Metric card — left 3px accent stripe */
+    /* ─── KPI / Metric ─── */
     [data-testid="stMetric"] {
-        background: var(--surface);
-        padding: 16px 20px 16px 18px; border-radius: var(--radius);
-        border: 1px solid var(--border);
-        border-left: 3px solid var(--action);
-        box-shadow: var(--card-shadow);
-        transition: all .2s ease;
+        background: var(--color-surface);
+        padding: 18px 18px 14px; border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        border-left: 3px solid var(--color-primary-500);
+        box-shadow: var(--shadow-sm);
+        transition: all var(--dur-norm) var(--ease-out);
+        position: relative; overflow: hidden;
     }
     [data-testid="stMetric"]:hover {
-        box-shadow: var(--card-shadow-hover);
-        transform: translateY(-1px);
+        box-shadow: var(--shadow-md); transform: translateY(-1px);
     }
     [data-testid="stMetricLabel"] p {
-        font-size:11.5px !important; color: var(--muted) !important;
-        font-weight:600; letter-spacing:.8px; text-transform: uppercase;
+        font-size: 11.5px !important; color: var(--color-muted) !important;
+        font-weight: 600; letter-spacing: .8px; text-transform: uppercase;
     }
     [data-testid="stMetricValue"] {
-        font-size:26px !important; font-weight:700; color: var(--text) !important;
-        font-family: var(--mono); letter-spacing: 0;
+        font-size: 26px !important; font-weight: 700; color: var(--color-ink) !important;
+        font-family: var(--font-mono); letter-spacing: -0.4px;
+        line-height: 1.1;
     }
-    [data-testid="stMetricDelta"] { font-size:.78rem !important; }
-    [data-testid="stMetricDelta"] svg { width: 14px; height: 14px; }
+    [data-testid="stMetricDelta"] {
+        font-size: 11.5px !important; font-weight: 700;
+        font-family: var(--font-mono);
+    }
+    [data-testid="stMetricDelta"] svg { width: 12px; height: 12px; }
 
-    /* Buttons — ghost default, gradient primary */
+    /* ─── Buttons ─── */
     .stButton>button, .stDownloadButton>button {
-        border-radius: var(--radius-sm); font-weight: 600; font-size: 13px; letter-spacing: .2px;
-        border: 1px solid var(--border); color: var(--text-2); background: var(--surface);
-        padding: .5rem 1.2rem; cursor: pointer;
-        transition: all .2s cubic-bezier(.4,0,.2,1);
+        border-radius: var(--radius-sm); font-weight: 600; font-size: 13px;
+        letter-spacing: .1px; line-height: 1; white-space: nowrap;
+        border: 1px solid var(--color-border); color: var(--color-ink-2);
+        background: var(--color-surface);
+        padding: 8px 14px; cursor: pointer;
+        transition: all var(--dur-fast) var(--ease-out);
     }
     .stButton>button:hover, .stDownloadButton>button:hover {
-        background: var(--surface-2); border-color: var(--action); color: var(--primary);
-        box-shadow: 0 2px 6px rgba(59,130,246,0.1);
+        background: var(--color-surface-2); border-color: var(--color-border-strong);
+        color: var(--color-ink);
     }
     .stButton>button[kind="primary"], .stDownloadButton>button[kind="primary"] {
-        background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
-        border-color: transparent; color: #ffffff;
-        box-shadow: 0 2px 8px rgba(29,78,216,0.25);
+        background: linear-gradient(135deg, var(--color-primary-700), var(--color-primary-500));
+        border-color: transparent; color: #fff;
+        box-shadow: 0 2px 8px rgba(37,99,235,.3);
     }
     .stButton>button[kind="primary"]:hover, .stDownloadButton>button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
-        box-shadow: 0 4px 12px rgba(30,64,175,0.3); transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(37,99,235,.42); transform: translateY(-1px);
     }
     .stButton>button:disabled {
-        background: var(--surface-3); color: #CBD5E1; border-color: var(--border); box-shadow: none;
+        background: var(--color-surface-3); color: #CBD5E1;
+        border-color: var(--color-border); box-shadow: none;
+        opacity: .5; cursor: not-allowed;
     }
 
-    /* File uploader / Dropzone */
+    /* ─── Dropzone ─── */
     div[data-testid="stFileUploader"] section {
-        padding: 1.4rem; border: 2px dashed var(--primary-300); border-radius: var(--radius);
-        background: var(--primary-50);
-        transition: all .2s ease;
+        padding: 28px; border: 2px dashed var(--color-primary-300);
+        border-radius: var(--radius-md); background: var(--color-primary-50);
+        transition: all var(--dur-norm) var(--ease-out);
     }
     div[data-testid="stFileUploader"] section:hover {
-        border-color: var(--action); background: var(--primary-100);
-        box-shadow: 0 4px 12px rgba(59,130,246,0.08);
+        border-color: var(--color-primary-500); background: var(--color-primary-100);
     }
 
-    /* Tabs — pill style */
+    /* ─── Tabs ─── */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 4px; border-bottom: 2px solid var(--border);
-        padding-bottom: 0;
+        gap: 2px; background: var(--color-surface-2);
+        padding: 4px; border-radius: 10px;
+        border: 1px solid var(--color-border);
     }
     .stTabs [data-baseweb="tab"] {
-        font-size: .9rem; padding: 8px 20px; border-radius: 8px 8px 0 0;
-        color: var(--muted); font-weight: 500;
-        transition: all .15s ease;
+        font-size: 13px; padding: 6px 14px; border-radius: 7px;
+        color: var(--color-muted); font-weight: 500;
+        transition: all var(--dur-fast) var(--ease-out);
+        border-bottom: none !important;
     }
     .stTabs [data-baseweb="tab"]:hover {
-        background: var(--accent) !important; color: var(--primary) !important;
+        color: var(--color-ink) !important; background: transparent !important;
     }
     .stTabs [aria-selected="true"] {
-        background: var(--surface) !important; color: var(--primary) !important;
-        font-weight: 700; border-bottom: 3px solid var(--amber) !important;
-        box-shadow: 0 -2px 8px rgba(30,64,175,0.06);
+        background: var(--color-surface) !important;
+        color: var(--color-primary-700) !important;
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(15,23,41,.08);
+        border-bottom: none !important;
     }
 
-    /* 強制淺色 */
-    [data-baseweb="input"],
-    [data-baseweb="input"] > div,
-    [data-baseweb="input"] > div > div,
-    [data-baseweb="select"] > div,
-    [data-baseweb="select"] > div > div,
-    [data-baseweb="textarea"],
-    [data-baseweb="textarea"] > div,
-    .stNumberInput > div > div,
-    .stTextInput > div > div,
-    .stDateInput > div > div {
-        background: #FFFFFF !important;
-        border-color: var(--border) !important;
-        border-radius: 8px !important;
+    /* ─── Inputs (force light) ─── */
+    [data-baseweb="input"], [data-baseweb="input"] > div, [data-baseweb="input"] > div > div,
+    [data-baseweb="select"] > div, [data-baseweb="select"] > div > div,
+    [data-baseweb="textarea"], [data-baseweb="textarea"] > div,
+    .stNumberInput > div > div, .stTextInput > div > div, .stDateInput > div > div {
+        background: var(--color-surface) !important;
+        border-color: var(--color-border) !important;
+        border-radius: var(--radius-sm) !important;
     }
-    [data-baseweb="input"] input,
-    [data-baseweb="select"] input,
-    [data-baseweb="textarea"] textarea,
-    .stNumberInput input,
-    .stTextInput input,
-    .stDateInput input,
+    [data-baseweb="input"] input, [data-baseweb="select"] input,
+    [data-baseweb="textarea"] textarea, .stNumberInput input,
+    .stTextInput input, .stDateInput input,
     input[type="text"], input[type="number"], input[type="search"], textarea {
-        background: #FFFFFF !important;
-        color: var(--text) !important;
-        caret-color: var(--text) !important;
-        -webkit-text-fill-color: var(--text) !important;
-        font-weight: 500 !important;
+        background: var(--color-surface) !important; color: var(--color-ink) !important;
+        caret-color: var(--color-ink) !important;
+        -webkit-text-fill-color: var(--color-ink) !important;
+        font-weight: 500 !important; font-size: 13px !important;
     }
-    [data-baseweb="input"]:focus-within,
-    [data-baseweb="select"] > div:focus-within {
-        border-color: var(--action) !important;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
+    [data-baseweb="input"]:focus-within, [data-baseweb="select"] > div:focus-within {
+        border-color: var(--color-primary-400) !important;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.12) !important;
     }
-    .stNumberInput button,
-    [data-testid="stNumberInput"] button {
-        background: #F8FAFC !important;
-        color: var(--primary) !important;
-        border: 1px solid var(--border) !important;
+    .stNumberInput button, [data-testid="stNumberInput"] button {
+        background: var(--color-surface-2) !important;
+        color: var(--color-primary-700) !important;
+        border: 1px solid var(--color-border) !important;
         border-radius: 6px !important;
     }
-    .stNumberInput button:hover,
-    [data-testid="stNumberInput"] button:hover {
-        background: var(--accent) !important;
+    .stNumberInput button:hover, [data-testid="stNumberInput"] button:hover {
+        background: var(--color-primary-50) !important;
     }
     [data-baseweb="select"] > div > div > div,
     [data-baseweb="select"] [data-baseweb="tag"] {
-        color: var(--text) !important;
-        font-weight: 500 !important;
+        color: var(--color-ink) !important; font-weight: 500 !important;
     }
-    [data-baseweb="popover"],
-    [data-baseweb="popover"] > div,
-    [data-baseweb="menu"],
-    [role="listbox"] {
-        background: #FFFFFF !important;
-        border-radius: var(--radius) !important;
-        box-shadow: 0 8px 30px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06) !important;
+
+    /* ─── Dropdown / Popover ─── */
+    [data-baseweb="popover"], [data-baseweb="popover"] > div,
+    [data-baseweb="menu"], [role="listbox"] {
+        background: var(--color-surface) !important;
+        border-radius: var(--radius-md) !important;
+        box-shadow: var(--shadow-lg) !important;
     }
-    [data-baseweb="popover"] [role="option"],
-    [data-baseweb="popover"] li,
-    [role="listbox"] > li,
-    [role="listbox"] [role="option"] {
-        background: #FFFFFF !important;
-        color: var(--text) !important;
-        padding: 10px 14px !important;
-        font-size: .9rem !important;
-        transition: background .12s ease;
+    [data-baseweb="popover"] [role="option"], [data-baseweb="popover"] li,
+    [role="listbox"] > li, [role="listbox"] [role="option"] {
+        background: var(--color-surface) !important; color: var(--color-ink) !important;
+        padding: 10px 14px !important; font-size: 13px !important;
+        transition: background var(--dur-fast) var(--ease-out);
     }
-    [data-baseweb="popover"] [role="option"]:hover,
-    [data-baseweb="popover"] li:hover,
+    [data-baseweb="popover"] [role="option"]:hover, [data-baseweb="popover"] li:hover,
     [role="listbox"] [role="option"]:hover {
-        background: var(--accent) !important;
-        color: var(--primary) !important;
+        background: var(--color-surface-2) !important;
     }
     [data-baseweb="popover"] [role="option"][aria-selected="true"],
     [role="listbox"] [role="option"][aria-selected="true"] {
-        background: var(--accent) !important;
-        color: var(--primary) !important;
-        font-weight: 700 !important;
+        background: var(--color-primary-50) !important;
+        color: var(--color-primary-700) !important; font-weight: 600 !important;
     }
     [data-baseweb="tag"] {
-        background: var(--accent) !important;
-        color: var(--primary) !important;
-        border-radius: 999px !important;
-    }
-    [data-testid="stModal"],
-    [role="dialog"],
-    [data-baseweb="modal"],
-    [data-baseweb="modal"] > div,
-    [data-testid="stToast"],
-    [data-baseweb="toast"] {
-        background: #FFFFFF !important;
-        color: var(--text) !important;
-    }
-    [role="tooltip"], [data-baseweb="tooltip"] {
-        background: var(--text) !important;
-        color: #FFFFFF !important;
-        border-radius: 8px !important;
-    }
-    [data-baseweb="checkbox"] span, [data-baseweb="radio"] span {
-        color: var(--text) !important;
+        background: var(--color-primary-50) !important;
+        color: var(--color-primary-700) !important; border-radius: 999px !important;
     }
 
-    /* Table */
+    /* ─── Modal / Toast / Tooltip ─── */
+    [data-testid="stModal"], [role="dialog"], [data-baseweb="modal"],
+    [data-baseweb="modal"] > div, [data-testid="stToast"], [data-baseweb="toast"] {
+        background: var(--color-surface) !important; color: var(--color-ink) !important;
+    }
+    [role="tooltip"], [data-baseweb="tooltip"] {
+        background: var(--color-ink) !important; color: #fff !important;
+        border-radius: var(--radius-sm) !important;
+    }
+    [data-baseweb="checkbox"] span, [data-baseweb="radio"] span {
+        color: var(--color-ink) !important;
+    }
+
+    /* ─── Table ─── */
     .stDataFrame, [data-testid="stDataFrame"] {
-        border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
-        background: var(--surface); box-shadow: var(--card-shadow);
+        border: 1px solid var(--color-border); border-radius: var(--radius-md);
+        overflow: hidden; background: var(--color-surface); box-shadow: var(--shadow-sm);
     }
     .stDataFrame thead tr th, [data-testid="stDataFrame"] thead tr th {
-        background: var(--surface-2) !important;
-        color: var(--muted) !important;
+        background: var(--color-surface-2) !important;
+        color: var(--color-muted) !important;
         font-weight: 600 !important; font-size: 11.5px !important;
-        letter-spacing: .5px; text-transform: uppercase;
-        border-bottom: 2px solid var(--border) !important;
+        letter-spacing: .6px; text-transform: uppercase;
+        border-bottom: 1px solid var(--color-border) !important;
         border-right: none !important; border-left: none !important;
+        position: sticky; top: 0;
     }
     .stDataFrame tbody tr td, [data-testid="stDataFrame"] tbody tr td {
         border-right: none !important; border-left: none !important;
-        border-bottom: 1px solid #F1F5F9 !important;
-        color: var(--text) !important;
+        border-bottom: 1px solid var(--color-surface-3) !important;
+        color: var(--color-ink-2) !important; font-size: 13px !important;
+    }
+    .stDataFrame tbody tr:hover td, [data-testid="stDataFrame"] tbody tr:hover td {
+        background: var(--color-surface-2) !important;
     }
     .mono-num, table.dashboard-table td.num {
-        font-family: var(--mono) !important; text-align: right !important;
-        font-variant-numeric: tabular-nums;
+        font-family: var(--font-mono) !important; text-align: right !important;
+        font-variant-numeric: tabular-nums; color: var(--color-ink);
     }
-
     table.dashboard-table {
-        width: 100%; border-collapse: collapse; background: var(--surface);
-        border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
-        font-size: .88rem;
+        width: 100%; border-collapse: collapse; background: var(--color-surface);
+        border: 1px solid var(--color-border); border-radius: var(--radius-md);
+        overflow: hidden; font-size: 13px;
     }
     table.dashboard-table thead th {
-        background: var(--surface-2); color: var(--muted);
-        font-weight: 600; font-size: 11.5px; letter-spacing: .5px;
-        text-transform: uppercase;
-        padding: 12px 14px; text-align: left;
-        border-bottom: 2px solid var(--border);
+        background: var(--color-surface-2); color: var(--color-muted);
+        font-weight: 600; font-size: 11.5px; letter-spacing: .6px;
+        text-transform: uppercase; padding: 10px 14px; text-align: left;
+        border-bottom: 1px solid var(--color-border);
     }
     table.dashboard-table tbody td {
-        padding: 10px 14px; border-bottom: 1px solid #F1F5F9;
-        color: var(--text);
+        padding: 12px 14px; border-bottom: 1px solid var(--color-surface-3);
+        color: var(--color-ink-2);
     }
     table.dashboard-table tbody tr:last-child td { border-bottom: none; }
-    table.dashboard-table tbody tr:hover { background: #F0F7FF; }
+    table.dashboard-table tbody tr:hover { background: var(--color-surface-2); }
 
+    /* ─── Pills ─── */
     .pill {
-        display: inline-block; padding: 3px 12px; border-radius: 999px;
-        background: var(--accent); color: var(--primary);
-        font-size: .76rem; font-weight: 600; letter-spacing: .3px;
-        line-height: 1.5;
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 9px; border-radius: 999px;
+        font-size: 11px; font-weight: 600; letter-spacing: .2px; white-space: nowrap;
+        background: var(--color-primary-50); color: var(--color-primary-700);
     }
-    .pill-amber {
-        background: var(--amber-light); color: var(--amber);
-    }
-    .pill-muted { background: #F1F5F9; color: var(--muted); }
+    .pill-amber { background: var(--color-accent-soft); color: var(--color-accent); }
+    .pill-good  { background: var(--color-good-soft); color: var(--color-good); }
+    .pill-bad   { background: var(--color-bad-soft); color: var(--color-bad); }
+    .pill-muted { background: var(--color-surface-3); color: var(--color-muted); }
 
-    /* Nav card (home page) */
+    /* ─── Nav cards (home) ─── */
     .nav-card {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 22px 20px; transition: all .2s ease;
-        box-shadow: var(--card-shadow);
+        background: var(--color-surface); border: 1px solid var(--color-border);
+        border-radius: var(--radius-md); padding: 20px 18px;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--dur-norm) var(--ease-out);
     }
     .nav-card:hover {
-        border-color: var(--action);
-        box-shadow: var(--card-shadow-hover);
-        transform: translateY(-2px);
+        border-color: var(--color-primary-300);
+        box-shadow: var(--shadow-md); transform: translateY(-2px);
     }
     .nav-card-icon {
         width: 40px; height: 40px; border-radius: 10px;
         display: flex; align-items: center; justify-content: center;
-        margin-bottom: 12px; font-size: 18px;
+        margin-bottom: 12px;
     }
-    .nav-icon-blue { background: var(--primary-50); color: var(--primary); }
-    .nav-icon-amber { background: var(--amber-light); color: var(--amber); }
-    .nav-icon-green { background: var(--good-light); color: var(--good); }
-    .nav-icon-purple { background: #EDE9FE; color: #5B21B6; }
+    .nav-icon-blue   { background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200)); color: var(--color-primary-700); }
+    .nav-icon-amber  { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E; }
+    .nav-icon-green  { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); color: #065F46; }
+    .nav-icon-purple { background: linear-gradient(135deg, #EDE9FE, #DDD6FE); color: #5B21B6; }
 
+    /* ─── Expander ─── */
     [data-testid="stExpander"] {
-        border-radius: var(--radius); border: 1px solid var(--border) !important;
-        background: var(--surface);
-        box-shadow: var(--card-shadow);
-        transition: box-shadow .2s ease;
+        border-radius: var(--radius-md); border: 1px solid var(--color-border) !important;
+        background: var(--color-surface); box-shadow: var(--shadow-sm);
+        transition: box-shadow var(--dur-norm) var(--ease-out);
     }
-    [data-testid="stExpander"]:hover {
-        box-shadow: var(--card-shadow-hover);
+    [data-testid="stExpander"]:hover { box-shadow: var(--shadow-md); }
+    [data-testid="stExpander"] summary {
+        font-weight: 600; font-size: 14px; color: var(--color-ink);
     }
-    [data-testid="stExpander"] summary { font-weight: 600; color: var(--primary); }
 
+    /* ─── Alerts ─── */
     [data-testid="stAlert"] {
-        border-radius: var(--radius); border-left-width: 4px;
-        box-shadow: 0 1px 4px rgba(15,23,42,0.04);
+        border-radius: var(--radius-md); border-left-width: 4px;
+        box-shadow: var(--shadow-sm);
     }
 
-    .muted { color: var(--muted); font-size: .82rem; }
-    hr { margin: 1.4rem 0; border: none; border-top: 1px solid var(--border); }
-
+    /* ─── Misc ─── */
+    .muted { color: var(--color-muted); font-size: 12.5px; }
+    hr { margin: 1.4rem 0; border: none; border-top: 1px solid var(--color-border); }
     .js-plotly-plot .plotly .bg { fill: transparent !important; }
 
-    /* Section divider with amber dot */
     .section-dot { display: inline-block; width: 8px; height: 8px;
-        border-radius: 50%; background: var(--amber); margin-right: 8px;
+        border-radius: 50%; background: var(--color-accent); margin-right: 8px;
         vertical-align: middle; }
+
+    /* ─── Card accent header ─── */
+    .card-accent { width: 4px; height: 16px; border-radius: 2px;
+        display: inline-block; margin-right: 8px; vertical-align: middle; }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
     </style>""", unsafe_allow_html=True)
 
 
@@ -887,13 +974,16 @@ def main():
     # Sidebar navigation
     with st.sidebar:
         st.markdown(
-            '<div style="padding:8px 0 16px 0;">'
-            '<div style="font-weight:700;font-size:1.1rem;color:var(--text);">根基營造</div>'
-            '<div style="font-size:12px;color:var(--muted);letter-spacing:1px;">KEDGE · 成本監測</div>'
-            '</div>',
+            '<div class="sidebar-logo">'
+            '<div class="sidebar-logo-mark">N</div>'
+            '<div>'
+            '<div class="sidebar-logo-text">根基營造</div>'
+            '<div class="sidebar-logo-sub">KEDGE · 成本監測</div>'
+            '</div></div>',
             unsafe_allow_html=True,
         )
-        st.markdown("---")
+        st.markdown("")
+        st.markdown('<div class="sidebar-section">主功能</div>', unsafe_allow_html=True)
         page_map = {
             "總覽儀表板": "home",
             "假設工程分析": "assumption",
@@ -910,6 +1000,9 @@ def main():
         if page_map[selected] != st.session_state['page']:
             st.session_state['page'] = page_map[selected]
             st.rerun()
+        st.markdown('<div class="sidebar-foot">'
+                    '<div class="sidebar-version">v1.5.0 · 2026.05</div>'
+                    '</div>', unsafe_allow_html=True)
 
     p = st.session_state['page']
     if p == 'home': page_home()
@@ -922,21 +1015,32 @@ def main():
 # 首頁
 # ═══════════════════════════════════════════════════════════════════
 def page_home():
-    st.markdown('<div class="crumb">總覽</div>', unsafe_allow_html=True)
     st.markdown('<h1 class="page-title">總覽儀表板</h1>', unsafe_allow_html=True)
-    st.markdown('<div class="page-sub">KG 一覽表分析 · 假設工程追蹤 · 造價統計 · 投標預估</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-sub">跨專案成本即時監測 · 假設工程追蹤 · 造價統計 · 投標預估</div>', unsafe_allow_html=True)
+
+    # KPI row from DB
+    a_names = db_get_all_assumption_names()
+    c_names = db_get_all_cost_names()
+    total_snaps = sum(len(db_get_assumption_snaps(dn)) for dn in a_names) + sum(len(db_get_cost_snaps(dn)) for dn in c_names)
+    total_projects = len(set(a_names) | set(c_names))
+    kc1, kc2, kc3, kc4 = st.columns(4)
+    with kc1: st.metric("進行中專案", f"{total_projects}", delta=None)
+    with kc2: st.metric("總快照數", f"{total_snaps}", delta=None)
+    with kc3: st.metric("假設工程專案", f"{len(a_names)}", delta=None)
+    with kc4: st.metric("造價分析專案", f"{len(c_names)}", delta=None)
+
     st.write("")
 
     v14 = _load_v14()
     nav = [
         ("假設工程分析", "13 項假設工程結算追蹤 · 跨期比對", "assumption", True, "blue",
-         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>'),
+         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h7M7 17h5"/></svg>'),
         ("造價分析", "八大類工程造價統計 · 產出 Excel", "cost_analysis", v14 is not None, "amber",
-         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 5-9"/></svg>'),
+         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 5-9"/></svg>'),
         ("投標預估", "依類型回歸預估 · 面積推算造價", "prediction", True, "green",
-         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'),
+         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'),
         ("歷史記錄", "查看過往快照 · 下載 Excel · 趨勢圖", "history", True, "purple",
-         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/><path d="M3.05 11a9 9 0 0118 0"/></svg>'),
+         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 109-9"/><path d="M3 3v6h6"/><path d="M12 8v4l3 2"/></svg>'),
     ]
     cols = st.columns(4, gap="medium")
     for (title, desc, target, enabled, color, icon), col in zip(nav, cols):
@@ -944,7 +1048,7 @@ def page_home():
             st.markdown(
                 f'''<div class="nav-card">
                     <div class="nav-card-icon nav-icon-{color}">{icon}</div>
-                    <div style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:6px;">{title}</div>
+                    <div style="font-weight:700;font-size:14px;color:var(--color-ink);margin-bottom:4px;">{title}</div>
                     <div class="muted">{desc}</div>
                 </div>''',
                 unsafe_allow_html=True,

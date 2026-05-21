@@ -1,6 +1,6 @@
 # 成本管理自動化監測系統
 
-> **Current Version: v1.5.0** | Last Updated: 2026-05-18
+> **Current Version: v2.0.0** | Last Updated: 2026-05-21
 
 ---
 
@@ -52,8 +52,8 @@ kg_history.db 包含兩個表，儲存所有分析歷史。
 
 ## 更新記錄
 
-### v1.5.0 - 2026-05-18
-- UI/UX 全面改版：左側邊欄導航、新設計色彩系統、麵包屑頁面標題、KPI 卡片重設計
+### v2.0.0 - 2026-05-21
+- UI/UX 全面改版（Hallmark design）：語義化 token 系統、pill 分頁、KPI 統計列、scrollbar、accent bar 標題
 
 ### v1.4.1 - 2026-05-11
 - 優化發包條件表單排版：全寬區域 + 分頁切換 + 三區塊分組，畫面更寬敞

@@ -1643,7 +1643,7 @@ def _render_cost_result(r):
         st.download_button(f"下載 {r['filename']}",
             data=r['excel_bytes'], file_name=r['filename'],
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=f"dl_{r['dn']}", use_container_width=True)
+            key=f"dl_{r['dn']}_{r.get('file_date','')}", use_container_width=True)
 
     # 八大類對比或摘要
     if prev:

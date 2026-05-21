@@ -3,61 +3,44 @@
 """
 成本管理自動化監測系統 — Streamlit 儀表板
 讀取 KG 一覽表 → 分析假設工程/造價 → 追蹤歷史快照
+
+業務邏輯已抽至 core/ 模組，本檔僅負責 Streamlit UI。
 """
-import os, json, re, warnings, io, zipfile, importlib, importlib.util, sys, sqlite3
+import os, json, re, warnings, io
 from datetime import datetime
 from pathlib import Path
+from collections import defaultdict, Counter
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from lxml import etree
 warnings.filterwarnings('ignore')
 
-DATA_DIR = Path("./kg_data"); DATA_DIR.mkdir(exist_ok=True)
-DB_FILE = Path("./kg_history.db")
-AREA_FILE = Path("./kg_areas.json")
-LOGO_FILE = Path("./logo.png")
-M2_PER_PING = 3.30579
-PING_PER_M2 = 0.3025
-ORDER = ['租工','打石工','技術工','零星建材','雜項工程','機具租金',
-         '安衛零星','雜支一','雜支二','水費','電費','電話費','人員薪資']
-PROJECT_TYPES = ['FAB', 'CUP', 'OFFICE', '物流中心', '其他']
-REGIONS = ['竹科', '中科', '南科', '其他']
-STRUCT_TYPES = ['RC', 'SC', 'SRC', '其他']
-CONTRACT_MODES = ['', '點工', '包工', '連工帶料']
+# ── 從 core 模組匯入所有業務邏輯 ──
+from core import (
+    DATA_DIR, DB_FILE, AREA_FILE, LOGO_FILE,
+    M2_PER_PING, PING_PER_M2, ORDER,
+    PROJECT_TYPES, REGIONS, STRUCT_TYPES, CONTRACT_MODES,
+    # conditions
+    detect_project_type, detect_fab_code, detect_region, default_conditions,
+    # parser
+    read_xlsx_via_xml, extract_categories, get_project_info,
+    # utils
+    parse_date_str, extract_file_date, extract_name_from_filename,
+    clean_project_name, extract_display_name, fmt, fpp,
+    # db
+    init_db, db_insert_assumption, db_get_assumption_snaps, db_get_all_assumption_names,
+    db_insert_cost, db_get_cost_snaps, db_get_all_cost_names, db_get_cost_excel,
+    db_delete_snapshot, db_clear_all, db_check_duplicate,
+    db_get_by_type, db_get_type_counts,
+    # areas
+    load_areas, save_areas, sync_area,
+    # analysis
+    regression, render_breakdown_ratios, render_assumption_ratios,
+)
+from core.utils import load_v14_module
 
-def detect_project_type(name):
-    s = str(name).upper()
-    if 'FAB' in s: return 'FAB'
-    if 'CUP' in s: return 'CUP'
-    if 'OFFICE' in s: return 'OFFICE'
-    if '物流' in str(name): return '物流中心'
-    return '其他'
-
-def detect_fab_code(name):
-    """從專案名偵測廠區代號，如 AP7P1、F22P5、AP6B 等"""
-    import re
-    s = str(name).upper()
-    m = re.search(r'(AP\d+P?\d*|F\d+P?\d*)', s)
-    return m.group(1) if m else ''
-
-def detect_region(name):
-    """從專案名猜測地區"""
-    s = str(name)
-    if '南科' in s: return '南科'
-    if '中科' in s: return '中科'
-    if '竹科' in s or '寶山' in s or '新竹' in s: return '竹科'
-    return ''
-
-def default_conditions():
-    """回傳空白的條件字典"""
-    return {
-        'fab_code': '', 'region': '', 'struct_type': '',
-        'floors': 0, 'duration_months': 0,
-        'contract_mode': '', 'with_material': '', 'with_equipment': '',
-        'rebar_price': 0, 'concrete_price': 0, 'formwork_price': 0,
-        'price_index': 0, 'note': '',
-    }
+DATA_DIR.mkdir(exist_ok=True)
 
 def render_conditions_input(dn, key_prefix, existing=None):
     """渲染條件輸入表單（僅回傳條件字典，不渲染 UI）。
@@ -165,291 +148,12 @@ def render_conditions_section(unique_dns, conds_dict, key_prefix):
 
     return conds_dict
 
-# ═══════════════════════════════════════════════════════════════════
-# SQLite
-# ═══════════════════════════════════════════════════════════════════
-def _db(): return sqlite3.connect(str(DB_FILE))
-
-def init_db():
-    with _db() as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS assumption_snapshots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            display_name TEXT NOT NULL, project_full TEXT, cutoff_date TEXT,
-            read_date TEXT NOT NULL, area_ping REAL,
-            total_budget REAL, total_settle REAL, items_json TEXT,
-            source_filename TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
-        c.execute("CREATE INDEX IF NOT EXISTS idx_a_name ON assumption_snapshots(display_name, read_date)")
-        c.execute("""CREATE TABLE IF NOT EXISTS cost_snapshots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            display_name TEXT NOT NULL, project_full TEXT, read_date TEXT NOT NULL,
-            area_ping REAL, area_m2 REAL, total_settle REAL,
-            big_groups_json TEXT, items_json TEXT, unassigned_count INTEGER,
-            source_filename TEXT, excel_blob BLOB, excel_filename TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
-        c.execute("CREATE INDEX IF NOT EXISTS idx_c_name ON cost_snapshots(display_name, read_date)")
-        for tbl in ('assumption_snapshots', 'cost_snapshots'):
-            try: c.execute(f"ALTER TABLE {tbl} ADD COLUMN project_type TEXT DEFAULT '其他'")
-            except: pass
-            try: c.execute(f"ALTER TABLE {tbl} ADD COLUMN conditions_json TEXT DEFAULT '{{}}'")
-            except: pass
+# ── 初始化 DB ──
 init_db()
 
-def db_insert_assumption(dn, pf, cd, ap, tb, ts, items, sf, file_date=None, project_type='其他', conditions=None):
-    rd = file_date if file_date else datetime.now().strftime('%Y-%m-%d')
-    cj = json.dumps(conditions or {}, ensure_ascii=False)
-    with _db() as c:
-        c.execute("""INSERT INTO assumption_snapshots
-            (display_name, project_full, cutoff_date, read_date, area_ping,
-             total_budget, total_settle, items_json, source_filename, project_type, conditions_json)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-            (dn, pf, cd, rd, ap, tb, ts, json.dumps(items, ensure_ascii=False), sf, project_type, cj))
-
-def db_get_assumption_snaps(dn=None):
-    c = _db(); c.row_factory = sqlite3.Row
-    q = "SELECT * FROM assumption_snapshots"
-    params = []
-    if dn: q += " WHERE display_name = ?"; params.append(dn)
-    q += " ORDER BY read_date ASC"
-    rows = c.execute(q, params).fetchall(); c.close()
-    out = []
-    for r in rows:
-        d = dict(r)
-        d['items'] = json.loads(d.get('items_json') or '{}')
-        d['conditions'] = json.loads(d.get('conditions_json') or '{}')
-        out.append(d)
-    return out
-
-def db_get_all_assumption_names():
-    c = _db()
-    rows = c.execute("SELECT DISTINCT display_name FROM assumption_snapshots ORDER BY display_name").fetchall()
-    c.close(); return [r[0] for r in rows]
-
-def db_insert_cost(dn, pf, ap, am, ts, bg, items, un, sf, xb, xf, file_date=None, project_type='其他', conditions=None):
-    rd = file_date if file_date else datetime.now().strftime('%Y-%m-%d')
-    cj = json.dumps(conditions or {}, ensure_ascii=False)
-    with _db() as c:
-        c.execute("""INSERT INTO cost_snapshots
-            (display_name, project_full, read_date, area_ping, area_m2,
-             total_settle, big_groups_json, items_json, unassigned_count,
-             source_filename, excel_blob, excel_filename, project_type, conditions_json)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (dn, pf, rd, ap, am, ts, json.dumps(bg, ensure_ascii=False),
-             json.dumps(items, ensure_ascii=False), un, sf, xb, xf, project_type, cj))
-
-def db_get_cost_snaps(dn=None):
-    c = _db(); c.row_factory = sqlite3.Row
-    cols = "id, display_name, project_full, read_date, area_ping, area_m2, total_settle, big_groups_json, items_json, unassigned_count, source_filename, excel_filename, project_type, conditions_json"
-    q = f"SELECT {cols} FROM cost_snapshots"
-    params = []
-    if dn: q += " WHERE display_name = ?"; params.append(dn)
-    q += " ORDER BY read_date ASC"
-    rows = c.execute(q, params).fetchall(); c.close()
-    out = []
-    for r in rows:
-        d = dict(r)
-        d['big_groups'] = json.loads(d.get('big_groups_json') or '{}')
-        d['items'] = json.loads(d.get('items_json') or '[]')
-        d['conditions'] = json.loads(d.get('conditions_json') or '{}')
-        out.append(d)
-    return out
-
-def db_get_all_cost_names():
-    c = _db()
-    rows = c.execute("SELECT DISTINCT display_name FROM cost_snapshots ORDER BY display_name").fetchall()
-    c.close(); return [r[0] for r in rows]
-
-def db_get_cost_excel(sid):
-    c = _db()
-    row = c.execute("SELECT excel_blob, excel_filename FROM cost_snapshots WHERE id=?", (sid,)).fetchone()
-    c.close(); return (row[0], row[1]) if row else (None, None)
-
-def db_delete_snapshot(table, sid):
-    with _db() as c: c.execute(f"DELETE FROM {table} WHERE id=?", (sid,))
-
-def db_clear_all(table):
-    with _db() as c: c.execute(f"DELETE FROM {table}")
-
-# ═══════════════════════════════════════════════════════════════════
-# XML 解析（假設工程，與 v4 邏輯一致）
-# ═══════════════════════════════════════════════════════════════════
-NS = {'ns': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
-def _parse_ref(ref):
-    m = re.match(r'([A-Za-z]+)(\d+)', ref); return m.group(1).upper(), int(m.group(2))
-
-def read_xlsx_via_xml(filepath):
-    data = {}; zf = zipfile.ZipFile(filepath); ss = []
-    if 'xl/sharedStrings.xml' in zf.namelist():
-        root = etree.parse(io.BytesIO(zf.read('xl/sharedStrings.xml')))
-        for si in root.findall('.//ns:si', NS):
-            ss.append(''.join(t.text for t in si.findall('.//ns:t', NS) if t.text))
-    sf = sorted(f for f in zf.namelist() if re.match(r'xl/worksheets/sheet\d+\.xml', f))
-    if not sf: raise ValueError("找不到工作表")
-    root = etree.parse(io.BytesIO(zf.read(sf[0])))
-    for row in root.findall('.//ns:row', NS):
-        for c in row.findall('ns:c', NS):
-            ref = c.get('r'); t = c.get('t'); v = c.find('ns:v', NS); ie = c.find('ns:is', NS); val = None
-            if ie is not None:
-                val = ''.join(te.text for te in ie.findall('.//ns:t', NS) if te.text)
-            elif t == 's' and v is not None and v.text:
-                idx = int(v.text)
-                if idx < len(ss): val = ss[idx]
-            elif v is not None and v.text:
-                val = v.text
-            if val is not None:
-                col, rn = _parse_ref(ref); data[(rn, col)] = val
-    return data
-
-def _f(v):
-    try: return float(v)
-    except: return 0.0
-
-def _parent_subs(data, pr, rs):
-    b = _f(data.get((pr,'M'),'0')); q = _f(data.get((pr,'Q'),'0')); w = _f(data.get((pr,'W'),'0'))
-    for r in range(pr+1, pr+500):
-        if r not in rs: continue
-        if (r,'E') in data: break
-        if (r,'S') in data:
-            w += _f(data.get((r,'W'),'0')); q += _f(data.get((r,'Q'),'0'))
-    return b, q, w
-
-def _agg_c_code(data, rows, rs, pat):
-    parents = [r for r in rows if pat in str(data.get((r,'C'),''))]
-    bt = qt = wt = 0; done = set()
-    for pr in parents:
-        if pr in done: continue
-        done.add(pr)
-        bt += _f(data.get((pr,'M'),'0')); qt += _f(data.get((pr,'Q'),'0')); wt += _f(data.get((pr,'W'),'0'))
-        for r in range(pr+1, pr+500):
-            if r in done or r not in rs: continue
-            if (r,'E') in data: break
-            if (r,'S') in data:
-                wt += _f(data.get((r,'W'),'0')); qt += _f(data.get((r,'Q'),'0')); done.add(r)
-    return bt, qt, wt
-
-def _find_f(data, rows, kw):
-    return [r for r in rows if kw in str(data.get((r,'F'),'')) and (r,'E') in data]
-
-def extract_categories(data):
-    rows = sorted({r for r, _ in data.keys()}); rs = set(rows); cats = {}
-    for nm, cd in [('租工','A.08.01'),('打石工','A.08.02'),('技術工','A.08.03'),
-                   ('雜項工程','A.08.04'),('機具租金','A.08.05'),('零星建材','A.08.06')]:
-        b, q, w = _agg_c_code(data, rows, rs, cd)
-        cats[nm] = {'budget': b, 'contract': q, 'settlement': w}
-    for nm, kw in [('安衛零星','安衛零星'),('雜支一','雜支一'),('雜支二','雜支二')]:
-        prs = _find_f(data, rows, kw); bt = qt = wt = 0
-        for pr in prs:
-            b, q, w = _parent_subs(data, pr, rs); bt += b; qt += q; wt += w
-        cats[nm] = {'budget': bt, 'contract': qt, 'settlement': wt}
-    water = [r for r in rows if '水費' in str(data.get((r,'F'),''))
-             and not any(x in str(data.get((r,'F'),'')) for x in ('飲水','排水','水電'))
-             and (r,'E') in data]
-    bt = qt = wt = 0
-    for pr in water:
-        b, q, w = _parent_subs(data, pr, rs); bt += b; qt += q; wt += w
-    cats['水費'] = {'budget': bt, 'contract': qt, 'settlement': wt}
-    elec = [r for r in rows if re.match(r'^電費', str(data.get((r,'F'),'')).strip()) and (r,'E') in data]
-    bt = qt = wt = 0
-    for pr in elec:
-        b, q, w = _parent_subs(data, pr, rs); bt += b; qt += q; wt += w
-    cats['電費'] = {'budget': bt, 'contract': qt, 'settlement': wt}
-    phone = _find_f(data, rows, '電話費'); bt = qt = wt = 0
-    for pr in phone:
-        bt += _f(data.get((pr,'M'),'0')); qt += _f(data.get((pr,'Q'),'0')); wt += _f(data.get((pr,'W'),'0'))
-    cats['電話費'] = {'budget': bt, 'contract': qt, 'settlement': wt}
-    sal = _find_f(data, rows, '薪資'); bt = qt = wt = 0
-    for pr in sal:
-        b, q, w = _parent_subs(data, pr, rs); bt += b; qt += q; wt += w
-    cats['人員薪資'] = {'budget': bt, 'contract': qt, 'settlement': wt}
-    return cats
-
-def get_project_info(data):
-    return data.get((2,'B'), '未知專案'), data.get((3,'B'), '')
-
-# ═══════════════════════════════════════════════════════════════════
-# 共用工具
-# ═══════════════════════════════════════════════════════════════════
-def _parse_date_str(s):
-    """從任意字串中擷取 YYYY-MM-DD，找不到回傳 None"""
-    if not s: return None
-    m = re.search(r'(\d{4})[-/\.](\d{2})[-/\.](\d{2})', str(s))
-    return f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m else None
-
-def extract_file_date(fp, cutoff_fallback=None):
-    """日期優先順序：① 檔名內的日期 → ② 檔案內截止日（cutoff B3） → ③ 今天
-    適用情境：
-      有日期檔名  KG一覽表 (2026-04-24).xlsx → 2026-04-24
-      有專案檔名  KG一覽表 (AP7P1-FAB).xlsx  → 從 cutoff B3 取得（例如 2026/03/31）
-    """
-    d = _parse_date_str(os.path.basename(str(fp)))
-    if d: return d
-    d = _parse_date_str(cutoff_fallback)
-    if d: return d
-    return datetime.now().strftime('%Y-%m-%d')
-
-def extract_name_from_filename(fp):
-    """從檔名括號內取專案名稱（非日期內容）
-    KG一覽表 (AP7P1-FAB).xlsx  → 'AP7P1-FAB'
-    KG一覽表 (2026-04-24).xlsx → None（是日期，不算）
-    """
-    fn = re.sub(r'\.xlsx?$', '', os.path.basename(str(fp)), flags=re.IGNORECASE)
-    m = re.search(r'[（(]([^）)]+)[）)]', fn)
-    if m:
-        content = m.group(1).strip()
-        if not _parse_date_str(content):   # 不是日期格式才當專案名稱
-            return content
-    return None
-
-def clean_project_name(name):
-    """清理從檔案內部讀取的專案名稱（B2 欄）"""
-    if not name or name.strip() in ('', '未知專案'): return None
-    return name.strip()[:40]
-
-def extract_display_name(fp):
-    """最終備用：從檔名推測顯示名稱"""
-    fn = os.path.basename(str(fp))
-    fn = re.sub(r'\.xlsx?$', '', fn, flags=re.IGNORECASE)
-    fn = re.sub(r'^KG.*一覽表[_\s]*', '', fn)
-    fn = re.sub(r'[_\s]*\d{4}[-\.]\d{2}[-\.]\d{2}[_\s]*$', '', fn)
-    return fn.strip('_ ()（）') or os.path.basename(str(fp))
-
-def db_check_duplicate(table, dn, read_date):
-    """判斷同一專案同一日期是否已有快照"""
-    c = _db()
-    n = c.execute(f"SELECT COUNT(*) FROM {table} WHERE display_name=? AND read_date=?",
-                  (dn, read_date)).fetchone()[0]
-    c.close(); return n > 0
-
-def load_areas():
-    if AREA_FILE.exists():
-        with open(AREA_FILE, 'r', encoding='utf-8') as f: return json.load(f)
-    return {}
-
-def save_areas(a):
-    with open(AREA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(a, f, ensure_ascii=False, indent=2)
-
-def fmt(n):
-    if n is None or n == 0: return '-'
-    if abs(n) >= 1e8: return f"{n/1e8:.2f}億"
-    if abs(n) >= 1e4: return f"{n/1e4:,.0f}萬"
-    return f"{n:,.0f}"
-
-def fpp(n, p):
-    if not n or not p or p < 10: return '-'
-    return f"{n/p:,.0f}"
-
-def _load_v14():
-    try: sd = Path(__file__).parent
-    except NameError: sd = Path('.')
-    for p in [sd/'kg_cost_analysis_v14.py', Path('.')/'kg_cost_analysis_v14.py']:
-        if p.exists():
-            spec = importlib.util.spec_from_file_location("v14", str(p))
-            mod = importlib.util.module_from_spec(spec)
-            old = sys.argv; sys.argv = ['']
-            try: spec.loader.exec_module(mod)
-            finally: sys.argv = old
-            return mod
-    return None
+# ── 相容性別名 ──
+_parse_date_str = parse_date_str
+_load_v14 = load_v14_module
 
 # ═══════════════════════════════════════════════════════════════════
 # 視覺樣式（統一、精簡、去 emoji 雜訊）
@@ -958,10 +662,7 @@ def area_input(dn, areas, key_prefix):
         st.caption("尚未設定（任一欄位輸入即可，另一欄會自動換算）")
     return ping
 
-def sync_area(dn, ping, areas):
-    if ping > 0 and abs(areas.get(dn, 0) - ping) > 0.001:
-        areas[dn] = ping; save_areas(areas); return True
-    return False
+# sync_area 已從 core.areas 匯入
 
 # ═══════════════════════════════════════════════════════════════════
 # 主程式
@@ -1204,7 +905,6 @@ def page_assumption():
         })
 
     # 顯示解析結果：依「專案名稱」分組呈現，凸顯哪些可畫趨勢
-    from collections import defaultdict
     proj_dates = defaultdict(list)
     risky = []
     for info in parsed_list:
@@ -1261,7 +961,6 @@ def page_assumption():
 
 
 def _render_assumption(results, areas):
-    from collections import Counter
     dn_counts = Counter(d.get('display_name', '') for d in results)
     # 概覽
     cols = st.columns(min(len(results), 5))
@@ -1288,7 +987,6 @@ def _render_assumption(results, areas):
             st.plotly_chart(fig, use_container_width=True)
 
     # 每個專案的分頁：同名專案出現多次時，加上日期區分
-    from collections import Counter
     dn_counts = Counter(d.get('display_name', '') for d in results)
     tab_labels = [
         f"{d.get('display_name','')} · {d.get('read_date','')}"
@@ -1820,47 +1518,11 @@ def _history_cost():
 # ═══════════════════════════════════════════════════════════════════
 import numpy as np
 
-def _regression(points, target_x):
-    if len(points) < 2: return None, None, {'n': len(points)}
-    x = np.array([p[0] for p in points], dtype=float)
-    y = np.array([p[1] for p in points], dtype=float)
-    a, b = np.polyfit(x, y, 1)
-    y_pred = a * x + b
-    ss_res = np.sum((y - y_pred) ** 2)
-    ss_tot = np.sum((y - np.mean(y)) ** 2)
-    r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
-    pred = a * target_x + b
-    se = np.sqrt(ss_res / (len(points) - 2)) if len(points) > 2 else 0
-    return max(pred, 0), r2, {'n': len(points), 'a': a, 'b': b, 'se': se,
-                               'x': x.tolist(), 'y': y.tolist()}
-
-def _db_get_by_type(table, pt):
-    c = _db(); c.row_factory = sqlite3.Row
-    rows = c.execute(f"SELECT * FROM {table} WHERE project_type=? ORDER BY read_date", (pt,)).fetchall()
-    c.close()
-    out = []
-    for r in rows:
-        d = dict(r)
-        if 'items_json' in d: d['items'] = json.loads(d.get('items_json') or '{}')
-        if 'big_groups_json' in d: d['big_groups'] = json.loads(d.get('big_groups_json') or '{}')
-        d['conditions'] = json.loads(d.get('conditions_json') or '{}')
-        out.append(d)
-    return out
-
-def _db_get_type_counts():
-    c = _db()
-    rows_a = c.execute("SELECT project_type, COUNT(*) as cnt FROM assumption_snapshots GROUP BY project_type").fetchall()
-    rows_c = c.execute("SELECT project_type, COUNT(*) as cnt FROM cost_snapshots GROUP BY project_type").fetchall()
-    c.close()
-    a = {r[0]: r[1] for r in rows_a}
-    cc = {r[0]: r[1] for r in rows_c}
-    return a, cc
-
-def _db_delete_snapshot(table, snap_id):
-    """刪除指定快照"""
-    c = _db()
-    c.execute(f"DELETE FROM {table} WHERE id=?", (snap_id,))
-    c.commit(); c.close()
+# ── 相容性別名（投標預估頁使用）──
+_regression = regression
+_db_get_by_type = db_get_by_type
+_db_get_type_counts = db_get_type_counts
+_db_delete_snapshot = db_delete_snapshot
 
 
 def _render_data_manager(sel_type, cost_snaps, assum_snaps):

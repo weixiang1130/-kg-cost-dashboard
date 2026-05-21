@@ -1618,10 +1618,10 @@ def page_cost_analysis():
     if 'v14_results' in st.session_state:
         results = st.session_state['v14_results']
         st.markdown("## 分析結果")
-        for r in results: _render_cost_result(r)
+        for i, r in enumerate(results): _render_cost_result(r, i)
 
 
-def _render_cost_result(r):
+def _render_cost_result(r, idx=0):
     prev_snaps = db_get_cost_snaps(r['dn'])
     prev = prev_snaps[-2] if len(prev_snaps) >= 2 else None
 
@@ -1643,7 +1643,7 @@ def _render_cost_result(r):
         st.download_button(f"下載 {r['filename']}",
             data=r['excel_bytes'], file_name=r['filename'],
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=f"dl_{r['dn']}_{r.get('file_date','')}", use_container_width=True)
+            key=f"dl_{idx}_{r['dn']}", use_container_width=True)
 
     # 八大類對比或摘要
     if prev:

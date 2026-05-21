@@ -15,7 +15,7 @@ def detect_project_type(name: str) -> str:
 def detect_fab_code(name: str) -> str:
     """從專案名偵測廠區代號，如 AP7P1、F22P5、AP6B 等"""
     s = str(name).upper()
-    m = re.search(r'(AP\d+P?\d*|F\d+P?\d*)', s)
+    m = re.search(r'(AP\d+[A-Z]?\d*|F\d+P?\d*)', s)
     return m.group(1) if m else ''
 
 

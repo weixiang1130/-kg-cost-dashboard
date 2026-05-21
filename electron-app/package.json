@@ -1,0 +1,42 @@
+{
+  "name": "kg-cost-dashboard",
+  "version": "2.1.0",
+  "description": "成本管理自動化監測系統 — Electron 桌面版",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.2",
+    "vite": "^6.3.5",
+    "electron": "^36.3.0",
+    "electron-builder": "^26.0.12",
+    "concurrently": "^9.1.2",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.kedge.kg-cost-dashboard",
+    "productName": "KG 成本管理系統",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    }
+  }
+}

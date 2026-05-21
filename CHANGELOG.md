@@ -4,6 +4,32 @@
 
 ---
 
+## [v2.1.0] - 2026-05-21
+
+### Added
+- **Phase 1：業務邏輯模組化** — 從 kg_dashboard.py 抽取 378 行邏輯至 `core/` 模組
+  - `core/constants.py`：共用常數（ORDER, PROJECT_TYPES, 路徑）
+  - `core/conditions.py`：專案條件偵測（detect_project_type / fab_code / region）
+  - `core/parser.py`：KG 一覽表 XML 解析引擎
+  - `core/db.py`：SQLite 資料庫操作（20+ 函式）
+  - `core/areas.py`：面積設定管理
+  - `core/analysis.py`：回歸分析與預估計算
+  - `core/utils.py`：日期解析、檔名處理、格式化
+- **FastAPI REST API**（`api_server.py`，17 個端點）
+  - 解析 KG、專案總覽、假設工程、造價分析、投標預估、歷史記錄、面積設定
+  - 自動生成 API 文件（http://localhost:8000/docs）
+- `requirements.txt`：Python 依賴清單
+- `start_api.bat`：Windows 快速啟動 API Server
+- `test_api.py`：API 端點驗證腳本
+
+### Changed
+- `kg_dashboard.py` 改為從 `core/` 匯入業務邏輯，UI 行為不變
+
+### Purpose
+為 Phase 2（Electron + React 桌面應用）奠定後端基礎。前端可透過 REST API 取得所有資料。
+
+---
+
 ## [v2.0.0] - 2026-05-21
 
 ### Changed

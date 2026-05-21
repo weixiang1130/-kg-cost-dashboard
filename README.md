@@ -1,33 +1,55 @@
 # 成本管理自動化監測系統
 
-> **Current Version: v2.0.0** | Last Updated: 2026-05-21
+> **Current Version: v2.1.0** | Last Updated: 2026-05-21
 
 ---
 
 ## 地端執行說明
 
 本系統完全在本機運行，不需要部署到網路伺服器。
-
-Streamlit 啟動時會自動在本機建立一個 Web 伺服器，透過 http://localhost:8501 提供服務。
 localhost 只有你的電腦能存取，外部網路無法連入，資料完全私有。
 
-## 需要的檔案（同一資料夾）
+## 專案結構
 
-- kg_dashboard.py            主程式
-- kg_cost_analysis_v14.py    造價分析引擎
-- start_dashboard.bat        Windows 快速啟動
+```
+kg_dashboard.py            Streamlit 儀表板（UI 層）
+kg_cost_analysis_v14.py    造價分析引擎
+core/                      業務邏輯模組
+  constants.py               共用常數
+  conditions.py              專案條件偵測
+  parser.py                  KG 一覽表 XML 解析
+  db.py                      SQLite 資料庫操作
+  areas.py                   面積設定管理
+  analysis.py                回歸分析與預估
+  utils.py                   通用工具函式
+api_server.py              FastAPI REST API（供未來 Electron 前端使用）
+start_dashboard.bat        Windows 快速啟動 Streamlit
+start_api.bat              Windows 快速啟動 API Server
+test_api.py                API 端點驗證腳本
+requirements.txt           Python 依賴清單
+```
 
 執行後自動產生:
 - kg_history.db              SQLite 歷史資料庫
 - kg_areas.json              各專案面積設定
 - kg_data/                   上傳的 KG 一覽表
 
+## 安裝依賴
+
+  pip install -r requirements.txt
+
 ## 啟動方式
 
-雙擊 start_dashboard.bat，或命令列執行:
+### Streamlit 儀表板（現行）
+雙擊 start_dashboard.bat，或：
   streamlit run kg_dashboard.py
-
 瀏覽器會自動開啟 http://localhost:8501
+
+### FastAPI 後端（Phase 2 準備）
+雙擊 start_api.bat，或：
+  uvicorn api_server:app --reload --port 8000
+API 文件：http://localhost:8000/docs
+
 要停止系統在命令列視窗按 Ctrl+C
 
 ## 功能總覽

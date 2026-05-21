@@ -1,0 +1,16 @@
+# 成本管理自動化監測系統 — Python 依賴
+# pip install -r requirements.txt
+
+# Streamlit 儀表板
+streamlit>=1.30
+pandas>=2.0
+plotly>=5.18
+openpyxl>=3.1
+lxml>=4.9
+numpy>=1.24
+scipy>=1.11
+
+# FastAPI 後端 (Phase 2+)
+fastapi>=0.110
+uvicorn>=0.27
+python-multipart>=0.0.6

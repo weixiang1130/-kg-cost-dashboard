@@ -8,6 +8,8 @@ from .utils import (parse_date_str, extract_file_date, extract_name_from_filenam
 from .areas import load_areas, save_areas, sync_area
 from .db import (init_db, db_insert_assumption, db_get_assumption_snaps,
                  db_get_all_assumption_names, db_insert_cost, db_get_cost_snaps,
-                 db_get_all_cost_names, db_get_cost_excel, db_delete_snapshot,
-                 db_clear_all, db_check_duplicate, db_get_by_type, db_get_type_counts)
+                 db_get_all_cost_names, db_get_cost_excel, db_update_cost_area,
+                 db_update_assumption_area,
+                 db_delete_snapshot, db_clear_all, db_check_duplicate,
+                 db_get_by_type, db_get_type_counts)
 from .analysis import regression, render_breakdown_ratios, render_assumption_ratios

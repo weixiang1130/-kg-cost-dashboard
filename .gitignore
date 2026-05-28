@@ -21,6 +21,7 @@ kg_areas.json
 # 上傳/暫存資料夾
 kg_data/
 files/
+backups/
 
 # 分析產出
 *.pdf
@@ -46,6 +47,9 @@ node_modules/
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# === 歸檔（舊版 Streamlit / Electron / mockup，僅留本機）===
+_archive/
 
 # === 測試暫存 ===
 .pytest_cache/

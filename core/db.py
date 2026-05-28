@@ -6,6 +6,14 @@ from datetime import datetime
 from .constants import DB_FILE
 
 
+_VALID_TABLES = frozenset({'assumption_snapshots', 'cost_snapshots'})
+
+
+def _check_table(table):
+    if table not in _VALID_TABLES:
+        raise ValueError(f"Invalid table name: {table}")
+
+
 def _db():
     return sqlite3.connect(str(DB_FILE))
 
@@ -123,17 +131,33 @@ def db_get_cost_excel(sid):
 
 # ── Common ──
 
+def db_update_cost_area(sid, area_ping):
+    area_m2 = area_ping / 0.3025 if area_ping > 0 else 0
+    with _db() as c:
+        c.execute("UPDATE cost_snapshots SET area_ping=?, area_m2=? WHERE id=?",
+                  (area_ping, area_m2, sid))
+
+
+def db_update_assumption_area(sid, area_ping):
+    with _db() as c:
+        c.execute("UPDATE assumption_snapshots SET area_ping=? WHERE id=?",
+                  (area_ping, sid))
+
+
 def db_delete_snapshot(table, sid):
+    _check_table(table)
     with _db() as c:
         c.execute(f"DELETE FROM {table} WHERE id=?", (sid,))
 
 
 def db_clear_all(table):
+    _check_table(table)
     with _db() as c:
         c.execute(f"DELETE FROM {table}")
 
 
 def db_check_duplicate(table, dn, read_date):
+    _check_table(table)
     c = _db()
     n = c.execute(f"SELECT COUNT(*) FROM {table} WHERE display_name=? AND read_date=?",
                   (dn, read_date)).fetchone()[0]
@@ -142,6 +166,7 @@ def db_check_duplicate(table, dn, read_date):
 
 
 def db_get_by_type(table, pt):
+    _check_table(table)
     c = _db(); c.row_factory = sqlite3.Row
     rows = c.execute(f"SELECT * FROM {table} WHERE project_type=? ORDER BY read_date", (pt,)).fetchall()
     c.close()

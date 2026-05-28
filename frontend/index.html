@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KG 成本管理系統</title>
+  <link rel="stylesheet" href="styles.css?v=6" />
+  <!-- React from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel standalone for JSX in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Utility modules (plain JS, no JSX) -->
+  <script src="js/format.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/api.js"></script>
+
+  <!-- Sequential JSX loader -->
+  <script>
+    (async function() {
+      var files = [
+        'js/Charts.jsx',
+        'js/UI.jsx',
+        'js/pages/Home.jsx',
+        'js/pages/BatchUpload.jsx',
+        'js/pages/Assumption.jsx',
+        'js/pages/CostAnalysis.jsx',
+        'js/pages/Prediction.jsx',
+        'js/pages/History.jsx',
+        'js/App.jsx',
+      ];
+      for (var i = 0; i < files.length; i++) {
+        try {
+          var resp = await fetch(files[i] + '?v=' + Date.now());
+          if (!resp.ok) throw new Error(files[i] + ': ' + resp.status);
+          var code = await resp.text();
+          var compiled = Babel.transform(code, { presets: ['react'] }).code;
+          var script = document.createElement('script');
+          script.textContent = compiled;
+          document.body.appendChild(script);
+        } catch (e) {
+          console.error('[JSX Loader]', files[i], e);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

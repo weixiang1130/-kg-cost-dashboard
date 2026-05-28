@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KG 成本管理系統 — 啟動與使用說明</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Noto Sans TC',system-ui,sans-serif;background:#F0F4F8;color:#1E293B;line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:28px;font-weight:700;margin-bottom:6px}
+  .subtitle{color:#64748B;font-size:14px;margin-bottom:36px}
+  h2{font-size:18px;font-weight:700;color:#1E3A8A;margin:36px 0 16px;padding-bottom:8px;border-bottom:2px solid #DBEAFE}
+  h3{font-size:15px;font-weight:600;color:#334155;margin:20px 0 10px}
+  p,li{font-size:14px;color:#475569}
+  ul,ol{padding-left:20px;margin-bottom:12px}
+  li{margin-bottom:6px}
+  code{font-family:'JetBrains Mono',monospace;background:#E2E8F0;padding:2px 7px;border-radius:4px;font-size:13px;color:#1E40AF}
+  pre{background:#1E293B;color:#E2E8F0;padding:16px 20px;border-radius:10px;overflow-x:auto;margin:12px 0 16px;font-size:13px;line-height:1.6;font-family:'JetBrains Mono',monospace}
+  pre b{color:#93C5FD;font-weight:500}
+  pre em{color:#86EFAC;font-style:normal}
+  .card{background:#fff;border-radius:12px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .card-icon.blue{background:#DBEAFE;color:#1E40AF}
+  .card-icon.green{background:#D1FAE5;color:#065F46}
+  .card-icon.amber{background:#FEF3C7;color:#92400E}
+  .card-icon.red{background:#FEE2E2;color:#991B1B}
+  .card-icon.purple{background:#EDE9FE;color:#5B21B6}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600}
+  .badge-blue{background:#DBEAFE;color:#1E40AF}
+  .badge-green{background:#D1FAE5;color:#065F46}
+  .tree{font-family:'JetBrains Mono',monospace;font-size:13px;color:#64748B;line-height:1.8}
+  .tree b{color:#1E293B;font-weight:600}
+  .tree em{color:#64748B;font-style:normal;font-size:12px}
+  .step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#1E40AF;color:#fff;border-radius:50%;font-size:12px;font-weight:700;flex-shrink:0}
+  .step{display:flex;gap:12px;margin-bottom:16px}
+  .step-body{flex:1}
+  .step-body strong{color:#1E293B;font-size:14px}
+  .step-body p{margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+  th{text-align:left;padding:8px 12px;background:#F1F5F9;color:#475569;font-weight:600;border-bottom:2px solid #E2E8F0}
+  td{padding:8px 12px;border-bottom:1px solid #F1F5F9;color:#475569}
+  .url{color:#2563EB;text-decoration:none;font-weight:500}
+  .url:hover{text-decoration:underline}
+  .warn{background:#FEF3C7;border-left:4px solid #F59E0B;padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px;color:#92400E}
+  .info{background:#EFF6FF;border-left:4px solid #3B82F6;padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px;color:#1E40AF}
+  .tag{display:inline-block;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-right:4px}
+  .tag-py{background:#FEF3C7;color:#92400E}
+  .tag-js{background:#DBEAFE;color:#1E40AF}
+  .tag-db{background:#D1FAE5;color:#065F46}
+  footer{text-align:center;color:#94A3B8;font-size:12px;margin-top:48px;padding-top:24px;border-top:1px solid #E2E8F0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>KG 成本管理系統</h1>
+<p class="subtitle">根基營造 KEDGE · 成本監測儀表板 — 地端運行使用指南 · v2.1.0</p>
+
+<!-- ====== 系統架構 ====== -->
+<h2>系統架構</h2>
+<div class="card">
+  <p style="margin-bottom:12px">本系統為<strong>純地端運行</strong>，無需安裝 Node.js，瀏覽器即可操作。</p>
+  <table>
+    <tr><th>層級</th><th>技術</th><th>說明</th></tr>
+    <tr><td><span class="tag tag-js">前端</span></td><td>React 18 CDN + Babel</td><td>瀏覽器內直接編譯 JSX，無需打包</td></tr>
+    <tr><td><span class="tag tag-py">後端</span></td><td>FastAPI + Uvicorn</td><td>REST API，同時提供靜態檔案服務</td></tr>
+    <tr><td><span class="tag tag-db">資料庫</span></td><td>SQLite</td><td>kg_history.db，單檔即所有資料</td></tr>
+  </table>
+</div>
+
+<!-- ====== 資料夾結構 ====== -->
+<h2>資料夾結構</h2>
+<div class="card">
+<div class="tree">
+CLAUDE測試/<br>
+├── <b>api_server.py</b> <em>← FastAPI 伺服器主程式</em><br>
+├── <b>start_api.bat</b> <em>← 雙擊啟動伺服器</em><br>
+├── <b>requirements.txt</b> <em>← Python 依賴清單</em><br>
+├── <b>kg_history.db</b> <em>← SQLite 資料庫（所有快照）</em><br>
+├── <b>kg_areas.json</b> <em>← 面積對照表</em><br>
+├── <b>.gitignore</b> <em>← 排除機敏資料</em><br>
+├── <b>core/</b> <em>← 後端核心模組</em><br>
+│&nbsp;&nbsp; ├── parser.py <em>（Excel 解析）</em><br>
+│&nbsp;&nbsp; ├── db.py <em>（資料庫操作）</em><br>
+│&nbsp;&nbsp; ├── analysis.py <em>（回歸分析）</em><br>
+│&nbsp;&nbsp; ├── conditions.py <em>（類型偵測）</em><br>
+│&nbsp;&nbsp; └── ...</em><br>
+├── <b>frontend/</b> <em>← 前端介面（CDN 模式）</em><br>
+│&nbsp;&nbsp; ├── index.html <em>（進入點）</em><br>
+│&nbsp;&nbsp; ├── styles.css <em>（設計系統）</em><br>
+│&nbsp;&nbsp; └── js/ <em>（元件 + 頁面）</em><br>
+├── <b>tests/</b> <em>← 61 項單元測試</em><br>
+├── <b>kg_data/</b> <em>← KG 一覽表 Excel（機敏）</em><br>
+├── <b>files/</b> <em>← 上傳暫存區</em><br>
+└── <b>_archive/</b> <em>← 歸檔（Streamlit 舊版 / Mockup / Electron）</em><br>
+</div>
+</div>
+
+<!-- ====== 快速啟動 ====== -->
+<h2>快速啟動</h2>
+
+<h3>首次安裝（僅需一次）</h3>
+<div class="card">
+  <div class="step">
+    <span class="step-num">1</span>
+    <div class="step-body">
+      <strong>確認 Python 已安裝</strong>
+      <p>開啟命令提示字元，輸入以下確認版本（需 3.10 以上）：</p>
+      <pre>python --version</pre>
+    </div>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <div class="step-body">
+      <strong>安裝 Python 套件</strong>
+      <p>在專案根目錄執行：</p>
+      <pre>pip install -r requirements.txt</pre>
+      <p>主要安裝：<code>fastapi</code> <code>uvicorn</code> <code>openpyxl</code> <code>numpy</code> <code>scipy</code></p>
+    </div>
+  </div>
+</div>
+
+<h3>每次使用</h3>
+<div class="card">
+  <div class="step">
+    <span class="step-num">1</span>
+    <div class="step-body">
+      <strong>啟動伺服器</strong>
+      <p>方法 A：雙擊 <code>start_api.bat</code></p>
+      <p>方法 B：命令列執行</p>
+      <pre><b>cd</b> "專案資料夾路徑"
+<b>uvicorn</b> api_server:app --reload --port 8000</pre>
+    </div>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <div class="step-body">
+      <strong>開啟瀏覽器</strong>
+      <p>前往 <a class="url" href="http://localhost:8000">http://localhost:8000</a></p>
+    </div>
+  </div>
+  <div class="step">
+    <span class="step-num">3</span>
+    <div class="step-body">
+      <strong>結束使用</strong>
+      <p>回到命令提示字元按 <code>Ctrl + C</code> 關閉伺服器</p>
+    </div>
+  </div>
+</div>
+
+<div class="info">
+  <strong>API 文件</strong>：啟動後可至 <a class="url" href="http://localhost:8000/docs">http://localhost:8000/docs</a> 檢視 Swagger 互動式文件。
+</div>
+
+<!-- ====== 五大功能 ====== -->
+<h2>五大功能頁面</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-icon blue">1</div>
+    <div><strong>總覽儀表板</strong><br><span style="font-size:12px;color:#64748B">首頁 — 跨專案快照總覽</span></div>
+  </div>
+  <ul>
+    <li>KPI 卡片：假設工程專案數、造價分析專案數、FAB / CUP 類案件數</li>
+    <li>類型分佈：依 FAB / CUP / OFFICE / 其他 顯示各類筆數</li>
+    <li>快速動作：直接跳轉至匯入、分析、預估、歷史頁</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-icon green">2</div>
+    <div><strong>假設工程分析</strong><br><span style="font-size:12px;color:#64748B">上傳 KG 一覽表 → 13 項目結算追蹤</span></div>
+  </div>
+  <ul>
+    <li><strong>匯入</strong>：拖拉或選擇 <code>.xlsx</code> 檔，系統自動解析 B2 專案名稱 + B3 截止日</li>
+    <li><strong>分析表</strong>：13 項假設工程（租工、打石工、技術工…）的預算 vs 結算差異</li>
+    <li><strong>趨勢追蹤</strong>：多期快照結算走勢圖</li>
+    <li><strong>專案切換</strong>：右側快速切換不同專案</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-icon amber">3</div>
+    <div><strong>造價分析</strong><br><span style="font-size:12px;color:#64748B">上傳造價 Excel → 八大類工程造價統計</span></div>
+  </div>
+  <ul>
+    <li><strong>匯入</strong>：上傳造價 Excel，系統自動解析八大類（土方/結構、外牆/裝修…）</li>
+    <li><strong>甜甜圈圖</strong>：造價組成占比</li>
+    <li><strong>柱狀圖</strong>：八大類成本排行</li>
+    <li><strong>下載</strong>：匯出分析結果為 Excel</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-icon purple">4</div>
+    <div><strong>投標預估</strong><br><span style="font-size:12px;color:#64748B">面積回歸 + What-if 敏感度試算</span></div>
+  </div>
+  <ul>
+    <li><strong>輸入</strong>：選擇類型（FAB / CUP / OFFICE）+ 輸入面積（坪）</li>
+    <li><strong>預估結果</strong>：回歸預估造價 + R² 信心指標 + 95% 信賴區間</li>
+    <li><strong>回歸散點圖</strong>：歷史案例 + 回歸線 + 信賴帶</li>
+    <li><strong>What-if</strong>：鋼筋 / 混凝土 / 工資指數滑桿即時調整</li>
+    <li><strong>同類明細</strong>：列出同類型歷史專案的面積、造價、元/坪</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-icon red">5</div>
+    <div><strong>歷史記錄</strong><br><span style="font-size:12px;color:#64748B">跨專案快照管理</span></div>
+  </div>
+  <ul>
+    <li>切換「假設工程」/「造價分析」tab 瀏覽全部快照</li>
+    <li>顯示：專案名稱、截止日、類型、結算金額、預算/面積</li>
+    <li>造價快照可下載原始 Excel</li>
+    <li>支援逐筆刪除（刪除前會確認）</li>
+  </ul>
+</div>
+
+<!-- ====== API 端點 ====== -->
+<h2>API 端點速查</h2>
+<div class="card">
+  <table>
+    <tr><th>方法</th><th>路徑</th><th>用途</th></tr>
+    <tr><td><span class="badge badge-green">GET</span></td><td><code>/api/projects</code></td><td>取得所有專案概覽</td></tr>
+    <tr><td><span class="badge badge-green">GET</span></td><td><code>/api/type-counts</code></td><td>各類型筆數統計</td></tr>
+    <tr><td><span class="badge badge-green">GET</span></td><td><code>/api/assumption/{name}</code></td><td>指定專案的假設工程快照</td></tr>
+    <tr><td><span class="badge badge-green">GET</span></td><td><code>/api/cost/{name}</code></td><td>指定專案的造價快照</td></tr>
+    <tr><td><span class="badge badge-green">GET</span></td><td><code>/api/prediction</code></td><td>回歸預估（?project_type=&area_ping=）</td></tr>
+    <tr><td><span class="badge badge-green">GET</span></td><td><code>/api/history</code></td><td>歷史快照清單（?table=）</td></tr>
+    <tr><td><span class="badge badge-green">GET</span></td><td><code>/api/areas</code></td><td>面積對照表</td></tr>
+    <tr><td><span class="badge badge-blue">POST</span></td><td><code>/api/parse-kg</code></td><td>上傳解析 KG 一覽表</td></tr>
+    <tr><td><span class="badge badge-blue">POST</span></td><td><code>/api/assumption/save</code></td><td>儲存假設工程快照</td></tr>
+    <tr><td><span class="badge badge-blue">POST</span></td><td><code>/api/cost/analyze</code></td><td>上傳分析造價 Excel</td></tr>
+    <tr><td style="color:#DC2626"><span class="badge" style="background:#FEE2E2;color:#991B1B">DEL</span></td><td><code>/api/snapshot/{table}/{id}</code></td><td>刪除快照</td></tr>
+  </table>
+</div>
+
+<!-- ====== 資料備份 ====== -->
+<h2>資料備份與移機</h2>
+<div class="card">
+  <p>所有專案資料（含原始 Excel 二進位）都儲存在單一檔案：</p>
+  <pre><b>kg_history.db</b>  ← SQLite 資料庫
+<b>kg_areas.json</b>  ← 面積對照表</pre>
+  <p>備份或移機時，只需複製這兩個檔案到新電腦的同一目錄即可。</p>
+</div>
+
+<div class="warn">
+  <strong>資安提醒</strong>：<code>kg_data/</code> 內的 Excel 檔案、<code>kg_history.db</code> 資料庫、<code>kg_areas.json</code> 面積表均為公司機敏資料，已在 <code>.gitignore</code> 中排除，<strong>不會上傳到 Git</strong>。
+</div>
+
+<!-- ====== 疑難排解 ====== -->
+<h2>常見問題</h2>
+<div class="card">
+  <h3>Q: 瀏覽器開啟後白屏？</h3>
+  <p>確認伺服器正在執行（命令視窗應顯示 <code>Uvicorn running on http://127.0.0.1:8000</code>）。若已關閉，重新雙擊 <code>start_api.bat</code>。</p>
+
+  <h3 style="margin-top:16px">Q: 首頁 KPI 全部顯示 0？</h3>
+  <p>資料庫為空。請到「假設工程分析」或「造價分析」頁面上傳第一筆 Excel，上傳後首頁會自動更新。</p>
+
+  <h3 style="margin-top:16px">Q: 上傳 Excel 後顯示「解析失敗」？</h3>
+  <p>確認檔案為 <code>.xlsx</code> 格式（非 <code>.xls</code> 舊格式），且 B2 為專案名稱、B3 為截止日。</p>
+
+  <h3 style="margin-top:16px">Q: port 8000 被佔用？</h3>
+  <p>修改 <code>start_api.bat</code> 中的 <code>--port 8000</code> 為其他埠號（如 8080），並在瀏覽器前往對應網址。</p>
+
+  <h3 style="margin-top:16px">Q: 想移回 Streamlit 舊版？</h3>
+  <p>所有 Streamlit 相關檔案在 <code>_archive/streamlit/</code> 中，將 <code>kg_dashboard.py</code> 複製回根目錄，雙擊 <code>start_dashboard.bat</code> 即可。</p>
+</div>
+
+<!-- ====== 歸檔說明 ====== -->
+<h2>歸檔資料夾說明</h2>
+<div class="card">
+  <table>
+    <tr><th>路徑</th><th>內容</th></tr>
+    <tr><td><code>_archive/streamlit/</code></td><td>Streamlit 版儀表板（kg_dashboard.py、v14 分析腳本、啟動腳本）</td></tr>
+    <tr><td><code>_archive/mockup/</code></td><td>原始 HTML/JSX 視覺 Mockup（儀表表測試/）</td></tr>
+    <tr><td><code>_archive/electron-app/</code></td><td>Electron + Vite 版本（需 Node.js，未來備用）</td></tr>
+    <tr><td><code>_archive/docs/</code></td><td>舊版 README、CHANGELOG、Phase 2 規劃文件</td></tr>
+  </table>
+</div>
+
+<footer>
+  KG 成本管理系統 v2.1.0 · 根基營造 KEDGE · 2026.05<br>
+  本文件隨系統附帶，雙擊 guide.html 即可開啟
+</footer>
+
+</div>
+</body>
+</html>

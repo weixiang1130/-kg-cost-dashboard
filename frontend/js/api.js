@@ -46,7 +46,24 @@ window.API = {
   getTypeCounts()            { return this.get('/api/type-counts'); },
   getAssumption(dn)          { return this.get('/api/assumption/' + encodeURIComponent(dn)); },
   getCost(dn)                { return this.get('/api/cost/' + encodeURIComponent(dn)); },
-  getPrediction(type, area)  { return this.get('/api/prediction?project_type=' + encodeURIComponent(type) + '&area_ping=' + area); },
+  getPrediction(type, area, opts = {}) {
+    const p = new URLSearchParams({ project_type: type, area_ping: area });
+    if (opts.structType)    p.set('struct_type', opts.structType);
+    if (opts.contractMode)  p.set('contract_mode', opts.contractMode);
+    if (opts.withMaterial)  p.set('with_material', opts.withMaterial);
+    if (opts.escalate === false) p.set('escalate', 'false');
+    if (opts.rebarPrice)    p.set('rebar_price', opts.rebarPrice);
+    if (opts.concretePrice) p.set('concrete_price', opts.concretePrice);
+    if (opts.labor)    p.set('labor', opts.labor);
+    return this.get('/api/prediction?' + p.toString());
+  },
+  getCostIndex()             { return this.get('/api/cost-index'); },
+  saveCostIndex(index)       { return this.put('/api/cost-index', { index }); },
+  getMaterialPrices()        { return this.get('/api/material-prices'); },
+  saveMaterialPrices(prices) { return this.put('/api/material-prices', { prices }); },
+  updateConditions(table, sid, conditions) {
+    return this.put('/api/snapshot/' + table + '/' + sid + '/conditions', { conditions });
+  },
   getHistory(table)          { return this.get('/api/history?table=' + table); },
   getAreas()                 { return this.get('/api/areas'); },
   saveAreas(areas)           { return this.put('/api/areas', { areas }); },

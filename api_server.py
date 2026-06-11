@@ -36,6 +36,10 @@ from core import (
     load_areas, save_areas, sync_area,
     # analysis
     regression, render_breakdown_ratios, render_assumption_ratios,
+    confidence_label, unit_cost_stats,
+    ensemble_predict, STRUCT_FACTORS, load_index, save_index,
+    load_prices, save_prices, reference_price, price_delta_pct,
+    db_update_conditions,
 )
 from core.utils import load_v14_module
 
@@ -339,16 +343,21 @@ def _build_proj_from_xml(data):
             fmt = 'A'
             break
 
+    def _fv(v):
+        """安全轉 float — 儲存格可能含文字（如「未完成」）"""
+        try: return float(v)
+        except (ValueError, TypeError): return 0.0
+
     # 找結算複價所在欄位：通常在 W 或 AE
     # 先嘗試 W 欄，若全為 0 則嘗試 AE
     settle_col = 'W'
-    test_sum = sum(float(data.get((r, 'W'), 0) or 0) for r in rows[:200] if data.get((r, 'C')))
+    test_sum = sum(_fv(data.get((r, 'W'), 0)) for r in rows[:200] if data.get((r, 'C')))
     if test_sum == 0:
         settle_col = 'AE'
 
     # 預算欄位
     budget_col = 'Q'
-    test_bud = sum(float(data.get((r, 'Q'), 0) or 0) for r in rows[:200] if data.get((r, 'C')))
+    test_bud = sum(_fv(data.get((r, 'Q'), 0)) for r in rows[:200] if data.get((r, 'C')))
     if test_bud == 0:
         budget_col = 'AB'
 
@@ -364,10 +373,6 @@ def _build_proj_from_xml(data):
                 elif '未施作預估金額' in v: yb_col = c_letter
                 elif '人事及規費' in v: yc_col = c_letter
                 elif '售服費' in v: yd_col = c_letter
-
-    def _fv(v):
-        try: return float(v)
-        except: return 0.0
 
     total_settle = 0.0
     cur_c = None
@@ -565,7 +570,8 @@ async def cost_analyze(files: list[UploadFile] = File(...)):
             proj_name, cutoff = get_project_info(raw)
             proj = _build_proj_from_xml(raw)
 
-            raw_pn = proj.get('project_name', '') or ''
+            # 舊版匯出的專案名不在 B2，fallback 到 get_project_info 的標籤定位
+            raw_pn = (proj.get('project_name') or proj_name or '')
             dn = (clean_project_name(raw_pn)
                   or extract_name_from_filename(str(tmp))
                   or extract_display_name(str(tmp)))
@@ -593,7 +599,9 @@ async def cost_analyze(files: list[UploadFile] = File(...)):
                 import openpyxl as oxl
                 wb = oxl.Workbook(); wb.remove(wb.active)
                 sf = v14.safe_filename(dn) or 'output'
-                v14.write_cost_analysis(wb, proj, clf, 0, f'{sf}_造價'[:31])
+                # 取已登錄面積（坪→m²），讓 Excel 的元/坪、元/m²、權比欄有值
+                area_m2 = _match_area(dn, load_areas()) * M2_PER_PING
+                v14.write_cost_analysis(wb, proj, clf, area_m2, f'{sf}_造價'[:31])
                 buf = io.BytesIO(); wb.save(buf); buf.seek(0)
                 excel_filename = f"{sf}_{file_date.replace('-','')}.xlsx"
                 _cache_put((dn, file_date), buf.getvalue())
@@ -678,50 +686,110 @@ def download_cost_excel(sid: int):
 def get_prediction(
     project_type: str = Query(...),
     area_ping: float = Query(..., ge=10),
+    struct_type: str = Query(''),       # RC / SC / SRC
+    contract_mode: str = Query(''),     # 總價承攬 / 實作實算 / 成本加酬金
+    with_material: str = Query(''),     # 無 / 鋼筋 / 鋼構 / 其他
+    escalate: bool = Query(True),       # 是否做物價指數調整
+    rebar_price: float = Query(0),      # 目前鋼筋發包價 元/噸（0=未輸入）
+    concrete_price: float = Query(0),   # 目前混凝土價 元/m³（0=未輸入）
+    labor: float = Query(0),            # 工資行情偏差 %（無單一市價，維持指數）
+    rebar: float = Query(0),            # （相容舊版）鋼筋指數 %
+    concrete: float = Query(0),         # （相容舊版）混凝土指數 %
 ):
-    """回歸預估造價"""
+    """投標預估 — 三法三角驗證（時間調整單價法 / 回歸法 / 分項組合法）"""
     cost_snaps = db_get_by_type('cost_snapshots', project_type)
     assum_snaps = db_get_by_type('assumption_snapshots', project_type)
+
+    target_conds = {'struct_type': struct_type, 'contract_mode': contract_mode,
+                    'with_material': with_material}
+
+    # 絕對價格 → 相對今日參考行情的偏差 %（優先於舊版相對指數）
+    base_year = datetime.now().year
+    prices = load_prices()
+    material_deltas = {
+        'rebar': {
+            'input_price': rebar_price,
+            'reference': reference_price('rebar', base_year, prices),
+            'delta_pct': price_delta_pct('rebar', rebar_price, base_year, prices)
+                         if rebar_price else rebar,
+        },
+        'concrete': {
+            'input_price': concrete_price,
+            'reference': reference_price('concrete', base_year, prices),
+            'delta_pct': price_delta_pct('concrete', concrete_price, base_year, prices)
+                         if concrete_price else concrete,
+        },
+        'labor': {'delta_pct': labor},
+    }
+    wf = {'rebar': material_deltas['rebar']['delta_pct'],
+          'concrete': material_deltas['concrete']['delta_pct'],
+          'labor': labor}
+    whatif = wf if any(wf.values()) else None
 
     result = {
         'project_type': project_type,
         'area_ping': area_ping,
         'area_m2': round(area_ping * M2_PER_PING),
+        'material_deltas': material_deltas,
     }
 
-    # Cost prediction
-    cost_pts = [(s['area_ping'], s['total_settle'])
-                for s in cost_snaps if s.get('area_ping', 0) >= 10]
-    if len(cost_pts) >= 2:
-        pred, r2, info = regression(cost_pts, area_ping)
-        result['cost_prediction'] = {
-            'predicted': pred, 'r2': r2, 'per_ping': pred / area_ping if area_ping else 0,
-            'n': info['n'], 'slope': info.get('a'), 'intercept': info.get('b'), 'se': info.get('se'),
-            'history_x': info.get('x', []), 'history_y': info.get('y', []),
-        }
-        result['cost_breakdown'] = render_breakdown_ratios(cost_snaps)
-    elif len(cost_pts) == 1:
-        pp = cost_pts[0][1] / cost_pts[0][0]
-        result['cost_prediction'] = {
-            'predicted': pp * area_ping, 'r2': None, 'per_ping': pp, 'n': 1,
-        }
+    # ── 三法三角驗證（新引擎）──
+    result['cost_ensemble'] = ensemble_predict(
+        cost_snaps, area_ping, target_conds, kind='cost',
+        escalate=escalate, whatif=whatif)
+    result['assumption_ensemble'] = ensemble_predict(
+        assum_snaps, area_ping, target_conds, kind='assumption',
+        escalate=escalate, whatif=whatif)
+
+    def _build_pred(pts, target):
+        """組裝單一回歸預估結果（cost / assumption 共用）"""
+        if len(pts) >= 2:
+            pred, r2, info = regression(pts, target)
+            level, note = confidence_label(info['n'], r2, info.get('extrapolation', False))
+            return {
+                'predicted': pred, 'r2': r2, 'r2_adj': info.get('r2_adj'),
+                'per_ping': pred / target if target else 0,
+                'n': info['n'], 'slope': info.get('a'), 'intercept': info.get('b'),
+                'se': info.get('se'), 't_crit': info.get('t_crit'),
+                'pi_lower': info.get('pi_lower'), 'pi_upper': info.get('pi_upper'),
+                'pi_band': info.get('pi_band', []),
+                'extrapolation': info.get('extrapolation', False),
+                'x_min': info.get('x_min'), 'x_max': info.get('x_max'),
+                'residuals': info.get('residuals', []), 'outliers': info.get('outliers', []),
+                'confidence': level, 'confidence_note': note,
+                'unit_cost': unit_cost_stats(pts),
+                'history_x': info.get('x', []), 'history_y': info.get('y', []),
+            }
+        if len(pts) == 1:
+            pp = pts[0][1] / pts[0][0]
+            return {
+                'predicted': pp * target, 'r2': None, 'per_ping': pp, 'n': 1,
+                'confidence': 'minimal', 'confidence_note': '僅 1 筆樣本，以單價直接換算',
+                'unit_cost': unit_cost_stats(pts),
+            }
+        return None
+
+    # Cost prediction（同步保留專案名/日期，與 history_x 索引對齊）
+    cost_recs = [s for s in cost_snaps if s.get('area_ping', 0) >= 10]
+    cost_pts = [(s['area_ping'], s['total_settle']) for s in cost_recs]
+    cp = _build_pred(cost_pts, area_ping)
+    if cp:
+        cp['history_names'] = [s.get('display_name', '') for s in cost_recs]
+        cp['history_dates'] = [s.get('read_date', '') for s in cost_recs]
+        result['cost_prediction'] = cp
+        if len(cost_pts) >= 2:
+            result['cost_breakdown'] = render_breakdown_ratios(cost_snaps)
 
     # Assumption prediction
-    assum_pts = [(s['area_ping'], s['total_settle'])
-                 for s in assum_snaps if s.get('area_ping', 0) >= 10]
-    if len(assum_pts) >= 2:
-        pred_a, r2_a, info_a = regression(assum_pts, area_ping)
-        result['assumption_prediction'] = {
-            'predicted': pred_a, 'r2': r2_a, 'per_ping': pred_a / area_ping if area_ping else 0,
-            'n': info_a['n'], 'slope': info_a.get('a'), 'intercept': info_a.get('b'), 'se': info_a.get('se'),
-            'history_x': info_a.get('x', []), 'history_y': info_a.get('y', []),
-        }
-        result['assumption_breakdown'] = render_assumption_ratios(assum_snaps)
-    elif len(assum_pts) == 1:
-        pp = assum_pts[0][1] / assum_pts[0][0]
-        result['assumption_prediction'] = {
-            'predicted': pp * area_ping, 'r2': None, 'per_ping': pp, 'n': 1,
-        }
+    assum_recs = [s for s in assum_snaps if s.get('area_ping', 0) >= 10]
+    assum_pts = [(s['area_ping'], s['total_settle']) for s in assum_recs]
+    ap = _build_pred(assum_pts, area_ping)
+    if ap:
+        ap['history_names'] = [s.get('display_name', '') for s in assum_recs]
+        ap['history_dates'] = [s.get('read_date', '') for s in assum_recs]
+        result['assumption_prediction'] = ap
+        if len(assum_pts) >= 2:
+            result['assumption_breakdown'] = render_assumption_ratios(assum_snaps)
 
     # Historical projects
     result['history_cost'] = [
@@ -738,6 +806,64 @@ def get_prediction(
     ]
 
     return result
+
+
+@app.get("/api/cost-index")
+def get_cost_index():
+    """營造物價指數表（年指數，內建近似值，可由 PUT 校正）"""
+    return {'index': load_index(), 'struct_factors': STRUCT_FACTORS}
+
+
+@app.put("/api/cost-index")
+def update_cost_index(data: dict):
+    """更新物價指數表，body: {"index": {"2024": 121.0, ...}}"""
+    idx = data.get('index', {})
+    if not isinstance(idx, dict) or not idx:
+        raise HTTPException(400, "index 須為非空 dict")
+    try:
+        save_index(idx)
+    except (ValueError, TypeError) as e:
+        raise HTTPException(400, f"指數格式錯誤: {e}")
+    return {'status': 'ok', 'index': load_index()}
+
+
+@app.get("/api/material-prices")
+def get_material_prices():
+    """大宗物料參考行情表（鋼筋 元/噸、混凝土 元/m³；內建近似值可校正）
+    公開來源：豐興每週牌價 / 中鋼盤價 / 主計總處營造物價指數月報"""
+    return {'prices': load_prices(),
+            'units': {'rebar': '元/噸', 'concrete': '元/m³'},
+            'names': {'rebar': '鋼筋', 'concrete': '預拌混凝土'}}
+
+
+@app.put("/api/material-prices")
+def update_material_prices(data: dict):
+    """更新參考行情，body: {"prices": {"rebar": {"2026": 19000}, ...}}"""
+    prices = data.get('prices', {})
+    if not isinstance(prices, dict) or not prices:
+        raise HTTPException(400, "prices 須為非空 dict")
+    try:
+        merged = load_prices()
+        for mat, table in prices.items():
+            if isinstance(table, dict):
+                merged.setdefault(mat, {}).update(
+                    {str(k): float(v) for k, v in table.items()})
+        save_prices(merged)
+    except (ValueError, TypeError) as e:
+        raise HTTPException(400, f"價格格式錯誤: {e}")
+    return {'status': 'ok', 'prices': load_prices()}
+
+
+@app.put("/api/snapshot/{table}/{sid}/conditions")
+def update_snapshot_conditions(table: str, sid: int, data: dict):
+    """更新快照條件（結構型式 / 發包方式 / 業主供料等），供預估相似度加權"""
+    if table not in ('assumption_snapshots', 'cost_snapshots'):
+        raise HTTPException(400, "Invalid table")
+    conds = data.get('conditions', {})
+    if not isinstance(conds, dict):
+        raise HTTPException(400, "conditions 須為 dict")
+    db_update_conditions(table, sid, conds)
+    return {'status': 'ok', 'id': sid, 'conditions': conds}
 
 
 # ═══════════════════════════════════════════════
@@ -829,7 +955,10 @@ async def batch_analyze(files: list[UploadFile] = File(...)):
                             wb = oxl.Workbook()
                             wb.remove(wb.active)
                             sf = v14.safe_filename(dn) or 'output'
-                            v14.write_cost_analysis(wb, proj, clf, 0, f'{sf}_造價'[:31])
+                            # matched_area 為坪，轉 m² 供 Excel per-area 欄位
+                            v14.write_cost_analysis(wb, proj, clf,
+                                                    matched_area * M2_PER_PING,
+                                                    f'{sf}_造價'[:31])
                             buf = io.BytesIO()
                             wb.save(buf)
                             buf.seek(0)

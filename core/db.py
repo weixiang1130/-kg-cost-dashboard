@@ -144,6 +144,14 @@ def db_update_assumption_area(sid, area_ping):
                   (area_ping, sid))
 
 
+def db_update_conditions(table, sid, conditions: dict):
+    """更新快照的條件欄位（結構型式/發包方式/業主供料等）"""
+    _check_table(table)
+    with _db() as c:
+        c.execute(f"UPDATE {table} SET conditions_json=? WHERE id=?",
+                  (json.dumps(conditions, ensure_ascii=False), sid))
+
+
 def db_delete_snapshot(table, sid):
     _check_table(table)
     with _db() as c:

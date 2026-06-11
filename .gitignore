@@ -18,6 +18,10 @@ __pycache__/
 # 面積設定（含專案名稱）
 kg_areas.json
 
+# 本地維護的行情/指數設定（runtime 產生）
+cost_index.json
+material_prices.json
+
 # 上傳/暫存資料夾
 kg_data/
 files/

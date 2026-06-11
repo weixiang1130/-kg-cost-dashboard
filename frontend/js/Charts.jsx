@@ -164,39 +164,63 @@ function Donut({ data, size = 200 }) {
   );
 }
 
-function RegressionChart({ history, regression, predictX, predictY, w = 720, h = 360, color, accentColor }) {
+function RegressionChart({ history, regression, predictX, predictY, band, dataXMax,
+                           w = 720, h = 360, color, accentColor }) {
   const padL = 64, padR = 24, padT = 24, padB = 44;
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
+  const [hoverPt, setHoverPt] = useState(null);
 
   const allX = [...history.map(p => p.area), predictX].filter(Boolean);
   const allY = [...history.map(p => p.cost), predictY].filter(Boolean);
+  const bandYs = (band || []).flatMap(b => [b[1], b[2]]);
   const xMin = Math.min(...allX) * 0.85;
   const xMax = Math.max(...allX) * 1.05;
-  const yMin = Math.min(...allY) * 0.85;
-  const yMax = Math.max(...allY) * 1.05;
+  const yMin = Math.min(...allY, ...(bandYs.length ? [Math.min(...bandYs)] : [])) * 0.85;
+  const yMax = Math.max(...allY, ...(bandYs.length ? [Math.max(...bandYs)] : [])) * 1.05;
 
   const xAt = v => padL + ((v - xMin) / (xMax - xMin)) * innerW;
-  const yAt = v => padT + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
+  const yAt = v => padT + innerH - ((v - yMin) / ((yMax - yMin) || 1)) * innerH;
+  const clampY = v => Math.max(padT, Math.min(padT + innerH, v));
 
   const { slope, intercept, se, r2 } = regression;
   const lineX1 = xMin, lineY1 = slope * lineX1 + intercept;
   const lineX2 = xMax, lineY2 = slope * lineX2 + intercept;
 
-  const bandPts = [];
-  for (let i = 0; i <= 40; i++) {
-    const x = xMin + (xMax - xMin) * (i / 40);
-    const yMid = slope * x + intercept;
-    bandPts.push([xAt(x), yAt(yMid + 1.96 * se), yAt(yMid - 1.96 * se)]);
+  // 信賴帶：優先用後端 t 分佈預測區間（喇叭形），無則退回固定 ±1.96·se
+  let bandPts;
+  if (band && band.length >= 2) {
+    bandPts = band
+      .filter(b => b[0] >= xMin && b[0] <= xMax)
+      .map(b => [xAt(b[0]), clampY(yAt(b[2])), clampY(yAt(b[1]))]);
+  } else {
+    bandPts = [];
+    for (let i = 0; i <= 40; i++) {
+      const x = xMin + (xMax - xMin) * (i / 40);
+      const yMid = slope * x + intercept;
+      bandPts.push([xAt(x), clampY(yAt(yMid + 1.96 * se)), clampY(yAt(yMid - 1.96 * se))]);
+    }
   }
-  const bandPath = bandPts.map((p,i) => (i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`)).join(' ') +
-    bandPts.slice().reverse().map(p => `L${p[0]},${p[2]}`).join(' ') + 'Z';
+  const bandPath = bandPts.length >= 2
+    ? bandPts.map((p,i) => (i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`)).join(' ') +
+      bandPts.slice().reverse().map(p => `L${p[0]},${p[2]}`).join(' ') + 'Z'
+    : '';
 
   const yTicks = 4;
   const yTickVals = Array.from({length:yTicks+1}, (_,i) => yMin + (yMax-yMin)*i/yTicks);
+  const xTicks = 4;
+  const xTickVals = Array.from({length:xTicks+1}, (_,i) => xMin + (xMax-xMin)*i/xTicks);
+
+  // 外插區：超出歷史資料範圍的右側區域淡色提示
+  const extraZone = dataXMax != null && xMax > dataXMax;
 
   return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{display:'block'}}>
+    <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{display:'block'}}
+         onMouseLeave={() => setHoverPt(null)}>
+      {extraZone && (
+        <rect x={xAt(dataXMax)} y={padT} width={padL + innerW - xAt(dataXMax)} height={innerH}
+              fill="var(--warn)" fillOpacity="0.05"/>
+      )}
       {yTickVals.map((v,i) => (
         <line key={i} x1={padL} x2={padL+innerW} y1={yAt(v)} y2={yAt(v)} stroke="var(--border)" strokeDasharray={i===0?'':'2 4'}/>
       ))}
@@ -205,20 +229,59 @@ function RegressionChart({ history, regression, predictX, predictY, w = 720, h =
           {formatTWD(v)}
         </text>
       ))}
-      <path d={bandPath} fill={color} fillOpacity="0.1"/>
-      <line x1={xAt(lineX1)} x2={xAt(lineX2)} y1={yAt(lineY1)} y2={yAt(lineY2)} stroke={color} strokeWidth="2" strokeDasharray="6 4"/>
+      {xTickVals.map((v,i) => (
+        <text key={'x'+i} x={xAt(v)} y={h-10} textAnchor="middle" fontSize="10" fill="var(--muted)" fontFamily="var(--font-mono)">
+          {Math.round(v).toLocaleString()}
+        </text>
+      ))}
+      <text x={padL+innerW} y={h-10} textAnchor="end" fontSize="9.5" fill="var(--muted)" dx="-4" dy="-14">坪</text>
+      {bandPath && <path d={bandPath} fill={color} fillOpacity="0.1"/>}
+      <line x1={xAt(lineX1)} x2={xAt(lineX2)} y1={clampY(yAt(lineY1))} y2={clampY(yAt(lineY2))} stroke={color} strokeWidth="2" strokeDasharray="6 4"/>
       {history.map((p, i) => (
-        <circle key={i} cx={xAt(p.area)} cy={yAt(p.cost)} r="5" fill="var(--surface)" stroke={color} strokeWidth="2"/>
+        <g key={i}>
+          <circle cx={xAt(p.area)} cy={yAt(p.cost)} r={hoverPt === i ? 7 : 5}
+                  fill={p.outlier ? 'var(--warn)' : 'var(--surface)'}
+                  stroke={p.outlier ? 'var(--warn)' : color} strokeWidth="2"
+                  style={{cursor:'pointer', transition:'r .15s'}}
+                  onMouseEnter={() => setHoverPt(i)}/>
+          {p.outlier && (
+            <text x={xAt(p.area)} y={yAt(p.cost)-12} textAnchor="middle" fontSize="9" fill="var(--warn)" fontWeight="700">
+              離群
+            </text>
+          )}
+        </g>
       ))}
       {predictX != null && predictY != null && (
         <g>
+          <line x1={xAt(predictX)} x2={xAt(predictX)} y1={padT} y2={padT+innerH}
+                stroke={accentColor} strokeOpacity="0.25" strokeDasharray="3 3"/>
           <circle cx={xAt(predictX)} cy={yAt(predictY)} r="10" fill={accentColor} opacity="0.18"/>
           <circle cx={xAt(predictX)} cy={yAt(predictY)} r="6" fill={accentColor}/>
-          <text x={xAt(predictX)+12} y={yAt(predictY)-8} fontSize="11" fontWeight="700" fill={accentColor} fontFamily="var(--font-mono)">
+          <text x={Math.min(xAt(predictX)+12, padL+innerW-150)} y={Math.max(yAt(predictY)-8, padT+12)}
+                fontSize="11" fontWeight="700" fill={accentColor} fontFamily="var(--font-mono)">
             預估 {formatTWD(predictY)}
           </text>
         </g>
       )}
+      {hoverPt != null && history[hoverPt] && (() => {
+        const p = history[hoverPt];
+        const tx = Math.min(xAt(p.area)+12, padL+innerW-170);
+        const ty = Math.max(yAt(p.cost)-58, padT+4);
+        return (
+          <g transform={`translate(${tx}, ${ty})`} pointerEvents="none">
+            <rect width="162" height="52" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="10" y="16" fontSize="10" fill="var(--text)" fontWeight="600">
+              {(p.display_name || '').slice(0, 18)}
+            </text>
+            <text x="10" y="31" fontSize="10" fill="var(--muted)" fontFamily="var(--font-mono)">
+              {p.area?.toLocaleString()} 坪
+            </text>
+            <text x="10" y="45" fontSize="11" fontWeight="700" fill="var(--text)" fontFamily="var(--font-mono)">
+              {formatTWD(p.cost)}
+            </text>
+          </g>
+        );
+      })()}
       <g transform={`translate(${padL+12}, ${padT+12})`}>
         <rect width="98" height="22" rx="11" fill={color} fillOpacity="0.12"/>
         <text x="49" y="11" textAnchor="middle" dy="0.32em" fontSize="11" fontWeight="700" fill={color} fontFamily="var(--font-mono)">

@@ -6,14 +6,9 @@ function Logo() {
     <div className="logo">
       <div className="logo-mark">
         <svg viewBox="0 0 32 32" width="28" height="28" fill="none">
-          <rect x="3" y="3" width="26" height="26" rx="7" fill="url(#lg-grad)"/>
-          <path d="M10 22 L10 10 L22 22 L22 10" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-          <defs>
-            <linearGradient id="lg-grad" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0%" stopColor="#1E3A8A"/>
-              <stop offset="100%" stopColor="#3B82F6"/>
-            </linearGradient>
-          </defs>
+          <rect x="3" y="3" width="26" height="26" rx="4" fill="#2A4357"/>
+          <rect x="3" y="3" width="26" height="3.5" fill="#EA580C"/>
+          <path d="M10 23 L10 11 L22 23 L22 11" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
         </svg>
       </div>
       <div className="logo-text">
@@ -57,7 +52,7 @@ function Sidebar({ page, setPage }) {
         ))}
       </nav>
       <div className="sidebar-foot">
-        <div className="version">v2.1.0 · 2026.05</div>
+        <div className="version">v2.2.0 · 2026.06</div>
       </div>
     </aside>
   );
